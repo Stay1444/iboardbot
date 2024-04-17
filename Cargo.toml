@@ -11,6 +11,7 @@ anyhow = "1.0.82"
 axum = { version = "0.7.5", features = ["macros", "ws", "json"] }
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 axum-server = "0.6.0"
+cgmath = "0.18.0"
 chrono = { version = "0.4.38", features = ["serde"] }
 lazy_static = "1.4.0"
 rand = "0.8.5"

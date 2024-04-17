@@ -1,6 +1,7 @@
 pub mod api;
 pub mod protocol;
 pub mod sessions;
+pub mod utils;
 
 #[tokio::main]
 async fn main() {
