@@ -8,12 +8,12 @@ pub struct Board {
     pub details: BoardDetails,
 }
 
-#[derive(Serialize, JsonSchema, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize, JsonSchema, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum BoardState {
     Disconnected,
     Ready,
-    Working,
+    Working(Job),
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -36,4 +36,15 @@ impl Default for BoardDetails {
 pub struct BoardDimensions {
     pub width: u32,
     pub height: u32,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, PartialEq, Eq, Clone)]
+pub struct Job {
+    pub id: u32,
+    pub action: JobAction,
+}
+
+#[derive(Serialize, Deserialize, Clone, JsonSchema, PartialEq, Eq)]
+pub enum JobAction {
+    Write(Vec<String>),
 }

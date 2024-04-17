@@ -31,7 +31,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     let service = ApiRouter::new()
         .nest_api_service("/docs", docs::new())
-        .nest_api_service("/api", controllers::routes())
+        .nest_api_service("/api", controllers::routes(state.clone()))
         .route("/_/board/:boardId", get(action::handle))
         .route("/", get(|| async { Redirect::permanent("/docs") }))
         .with_state(state)

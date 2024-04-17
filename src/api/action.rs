@@ -4,8 +4,6 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::protocol::{BoardAction, BoardMessage};
-
 use super::services::boards::Boards;
 
 #[derive(Deserialize, Debug)]
@@ -29,26 +27,16 @@ pub async fn handle(
     State(boards): State<Boards>,
 ) -> impl IntoResponse {
     if data.status == Some(BotActionStatus::Ack) {
-        if data.block_number == Some(0) {
-            // Only used for the wait command
-            return vec![];
-        }
-
         let Some(block_id) = data.block_number else {
             return vec![];
         };
 
-        boards.ack_job(block_id).await;
+        boards.ack_job(id, block_id).await;
 
         return vec![];
     }
 
-    let Some(job) = boards.pop_job(id).await else {
-        let mut message = BoardMessage::new(0);
-        message.push(BoardAction::Wait(1));
-
-        return message.encode();
-    };
+    let job = boards.get_job(id).await;
 
     todo!()
 }
