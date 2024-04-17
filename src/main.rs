@@ -1,12 +1,16 @@
+use std::time::Duration;
+
 use axum::{
     extract::{FromRef, Query, State},
     response::IntoResponse,
     Router,
 };
+use board::BoardAction;
 use serde::Deserialize;
 use sessions::Sessions;
 use tokio::net::TcpListener;
 
+pub mod board;
 pub mod sessions;
 
 #[derive(FromRef, Clone)]
@@ -16,7 +20,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
-    let listener = TcpListener::bind("0.0.0.0:4000").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
 
     setup_logging();
 
@@ -25,7 +29,7 @@ async fn main() {
     };
 
     let service = Router::new()
-        .route("/bot", axum::routing::get(bot_action))
+        .route("/", axum::routing::get(bot_action))
         .with_state(state)
         .into_make_service();
 
@@ -45,7 +49,7 @@ fn setup_logging() {
         .init();
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct BotActionData {
     #[serde(rename = "APPID", default)]
     app_id: Option<String>,
@@ -55,7 +59,7 @@ struct BotActionData {
     block_number: Option<u64>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE")]
 enum BotActionStatus {
     Ack,
@@ -66,11 +70,34 @@ async fn bot_action(
     State(sessions): State<Sessions>,
     Query(data): Query<BotActionData>,
 ) -> impl IntoResponse {
-    let Some(app_id) = data.app_id else {
-        return;
-    };
-    let session = match sessions.get(app_id.clone()).await {
-        Some(session) => session,
-        None => sessions.create(app_id.clone()).await,
-    };
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    match data.status {
+        Some(BotActionStatus::Ready) => {
+            let commands: Vec<[u8; 3]> = vec![
+                BoardAction::StartBlock,
+                BoardAction::BlockNumber(1),
+                BoardAction::StartDrawing,
+                BoardAction::Move(0, 0),
+                BoardAction::Wait(2),
+                BoardAction::Move(0, 1500),
+                BoardAction::Wait(1),
+                BoardAction::Eraser,
+                BoardAction::Move(0, 0),
+                BoardAction::StopDrawing,
+            ]
+            .into_iter()
+            .map(|x| x.serialize())
+            .collect();
+
+            let mut data = vec![];
+
+            for i in &commands {
+                data.extend_from_slice(i);
+            }
+
+            return data;
+        }
+        _ => return vec![],
+    }
 }
