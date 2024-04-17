@@ -1,3 +1,29 @@
+pub struct BoardMessage {
+    actions: Vec<BoardAction>,
+}
+
+impl BoardMessage {
+    pub fn new(id: u8) -> Self {
+        Self {
+            actions: vec![BoardAction::StartBlock, BoardAction::BlockNumber(id)],
+        }
+    }
+
+    pub fn push(&mut self, action: BoardAction) {
+        self.actions.push(action);
+    }
+
+    pub fn encode(self) -> Vec<u8> {
+        let mut result = vec![];
+
+        for action in self.actions {
+            result.extend_from_slice(&action.serialize());
+        }
+
+        result
+    }
+}
+
 pub enum BoardAction {
     StartBlock,
     BlockNumber(u8),
