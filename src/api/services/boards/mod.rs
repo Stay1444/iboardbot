@@ -123,8 +123,8 @@ impl Actor {
                 if let Some(callbacks) = callbacks {
                     for i in callbacks {
                         _ = i.send(job.clone());
-                        return;
                     }
+                    return;
                 };
 
                 let pending = self.pending_jobs.get_mut(&id);
@@ -288,7 +288,7 @@ impl Boards {
 
         _ = self.sender.send(msg).await;
 
-        let job = rx.await.unwrap();
+        let job = rx.await.expect("Actor disconnected");
 
         job
     }

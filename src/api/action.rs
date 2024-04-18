@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 use crate::{
     api::services::boards::entities::JobAction,
-    protocol::BoardMessage,
+    protocol::{BoardAction, BoardMessage},
     utils::{self, coords::CoordinateProjector},
 };
 
@@ -45,7 +45,7 @@ pub async fn handle(
 
     let board = boards.get(&id).await;
 
-    let job = boards.get_job(id).await;
+    let job = boards.get_job(id.clone()).await;
 
     let projector = CoordinateProjector::new(Rect::from_corners(
         Vec2::ZERO,
@@ -58,11 +58,20 @@ pub async fn handle(
     let mut message = BoardMessage::new(1);
 
     match &job.action {
+        JobAction::DrawSVG { svg, scale } => {
+            let messages = utils::svg::draw(board.details.dimensions, svg.clone(), *scale, false);
+            for msg in messages {
+                boards.add_job(id.clone(), JobAction::Raw(msg)).await;
+            }
+        }
         JobAction::WriteLines(lines) => {
-            utils::text::write(&mut message, lines.clone(), 200.0, projector, false)
+            utils::text::write(&mut message, lines.clone(), 400.0, projector, false)
         }
         JobAction::EraseLines(lines) => {
-            utils::text::write(&mut message, lines.clone(), 200.0, projector, true)
+            utils::text::write(&mut message, lines.clone(), 400.0, projector, true)
+        }
+        JobAction::Raw(message) => {
+            return message.encode();
         }
     }
 

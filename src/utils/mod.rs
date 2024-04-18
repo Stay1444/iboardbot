@@ -1,6 +1,7 @@
 use crate::protocol::BoardAction;
 
 pub mod coords;
+pub mod svg;
 pub mod text;
 
 #[derive(Clone, PartialEq, Debug)]

@@ -157,6 +157,17 @@ fn get_char(char: char) -> Vec<SBA> {
             SBA::PenDown,
             SBA::Move(0.0, 0.0),
         ],
+        'F' => &[
+            SBA::Move(0.0, 0.0),
+            SBA::Move(1.0, 0.0),
+            SBA::PenDown,
+            SBA::Move(0.0, 0.0),
+            SBA::Move(0.0, 1.0),
+            SBA::PenUp,
+            SBA::Move(0.0, 0.7),
+            SBA::PenDown,
+            SBA::Move(1.0, 0.7),
+        ],
         'H' => &[
             SBA::Move(0.0, 1.0),
             SBA::PenDown,

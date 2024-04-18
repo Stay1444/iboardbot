@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use schemars::JsonSchema;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, JsonSchema, Clone)]
 pub struct BoardMessage {
     actions: Vec<BoardAction>,
 }
@@ -6,7 +8,11 @@ pub struct BoardMessage {
 impl BoardMessage {
     pub fn new(id: u8) -> Self {
         Self {
-            actions: vec![BoardAction::StartBlock, BoardAction::BlockNumber(id)],
+            actions: vec![
+                BoardAction::StartBlock,
+                BoardAction::BlockNumber(id),
+                BoardAction::StartDrawing,
+            ],
         }
     }
 
@@ -14,18 +20,20 @@ impl BoardMessage {
         self.actions.push(action);
     }
 
-    pub fn encode(self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut result = vec![];
 
-        for action in self.actions {
+        for action in &self.actions {
             result.extend_from_slice(&action.serialize());
         }
+
+        result.extend_from_slice(&BoardAction::StopDrawing.serialize());
 
         result
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, JsonSchema, Clone)]
 pub enum BoardAction {
     StartBlock,
     BlockNumber(u8),
