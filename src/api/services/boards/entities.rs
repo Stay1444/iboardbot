@@ -46,5 +46,6 @@ pub struct Job {
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema, PartialEq, Eq)]
 pub enum JobAction {
-    Write(Vec<String>),
+    WriteLines(Vec<String>),
+    EraseLines(Vec<String>),
 }

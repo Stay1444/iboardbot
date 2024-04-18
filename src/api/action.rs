@@ -2,7 +2,14 @@ use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
+use bevy_math::{Rect, Vec2};
 use serde::Deserialize;
+
+use crate::{
+    api::services::boards::entities::JobAction,
+    protocol::BoardMessage,
+    utils::{self, coords::CoordinateProjector},
+};
 
 use super::services::boards::Boards;
 
@@ -36,7 +43,28 @@ pub async fn handle(
         return vec![];
     }
 
+    let board = boards.get(&id).await;
+
     let job = boards.get_job(id).await;
 
-    todo!()
+    let projector = CoordinateProjector::new(Rect::from_corners(
+        Vec2::ZERO,
+        Vec2::new(
+            board.details.dimensions.width as f32,
+            board.details.dimensions.height as f32,
+        ),
+    ));
+
+    let mut message = BoardMessage::new(1);
+
+    match &job.action {
+        JobAction::WriteLines(lines) => {
+            utils::text::write(&mut message, lines.clone(), 200.0, projector, false)
+        }
+        JobAction::EraseLines(lines) => {
+            utils::text::write(&mut message, lines.clone(), 200.0, projector, true)
+        }
+    }
+
+    message.encode()
 }

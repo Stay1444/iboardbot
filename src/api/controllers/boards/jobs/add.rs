@@ -25,7 +25,7 @@ pub fn docs(op: TransformOperation) -> TransformOperation {
         .response_with::<200, Json<Job>, _>(|res| {
             res.example(Job {
                 id: 62,
-                action: JobAction::Write(vec!["Hello".into(), "World".into()]),
+                action: JobAction::WriteLines(vec!["Hello".into(), "World".into()]),
             })
         })
 }

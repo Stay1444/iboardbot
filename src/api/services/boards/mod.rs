@@ -4,6 +4,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use lazy_static::lazy_static;
 use rand::Rng;
 use tokio::sync::{mpsc, oneshot};
+use tracing::info;
 
 use self::entities::{Board, BoardDetails, BoardState, Job, JobAction};
 
@@ -71,6 +72,8 @@ impl Actor {
                     }
                     _ => (),
                 };
+
+                info!("Board waiting for job");
 
                 let jobs = self.pending_jobs.get_mut(&id);
 
@@ -283,7 +286,7 @@ impl Boards {
             respond_to: tx,
         };
 
-        _ = self.sender.send(msg);
+        _ = self.sender.send(msg).await;
 
         let job = rx.await.unwrap();
 

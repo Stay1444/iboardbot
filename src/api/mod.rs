@@ -39,7 +39,7 @@ pub async fn run() -> anyhow::Result<()> {
         .layer(Extension(Arc::new(open_api)))
         .into_make_service();
 
-    let listener = TcpListener::bind("0.0.0.0:5080").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, service).await?;
 
     Ok(())

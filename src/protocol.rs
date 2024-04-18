@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct BoardMessage {
     actions: Vec<BoardAction>,
 }
@@ -24,6 +25,7 @@ impl BoardMessage {
     }
 }
 
+#[derive(Debug)]
 pub enum BoardAction {
     StartBlock,
     BlockNumber(u8),
