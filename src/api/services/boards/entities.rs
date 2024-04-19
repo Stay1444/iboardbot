@@ -48,7 +48,8 @@ pub struct Job {
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema, PartialEq)]
 pub enum JobAction {
-    DrawSVG { source: SVGSource, scale: f32 },
+    DrawSVG(SVGSource),
+    DrawSVGGroup(Vec<SVGSource>),
     Calibrate,
     WriteLines(Vec<String>),
     EraseLines(Vec<String>),

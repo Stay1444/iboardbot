@@ -1,27 +1,33 @@
-use std::{fmt::write, path::PathBuf, process::Command, time::SystemTime};
+use std::{path::PathBuf, process::Command};
 
-use bevy_math::Vec2;
+use bevy_math::{Rect, Vec2};
 use tracing::info;
-use uuid::{Timestamp, Uuid};
+use uuid::Uuid;
 
 use crate::{
-    api::services::boards::entities::BoardDimensions,
-    protocol::{BoardAction, BoardMessage},
+    protocol::BoardMessage,
+    utils::{qtree::QuadTree, SBM},
 };
 
-use super::{coords::CoordinateProjector, SBA};
+use super::SBA;
 
-pub fn draw(
-    dimensions: BoardDimensions,
-    svg: String,
-    scale: f32,
-    erase: bool,
-) -> Vec<BoardMessage> {
+pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> Vec<BoardMessage> {
+    let mut qtree = QuadTree::<String>::new(bounds, 4);
+    let mut messages = vec![];
+
+    qtree.feed(svgs);
+
+    qtree.iter(&mut |rect, svg| {
+        messages.append(&mut draw(rect, svg));
+    });
+
+    messages
+}
+
+pub fn draw(rect: Rect, svg: String) -> Vec<BoardMessage> {
     let gcode = generate_gcode(svg);
 
-    let mut messages = vec![];
-    let mut actions = vec![];
-    let mut is_pen_down = false;
+    let mut message = SBM::new(1);
 
     for line in gcode.lines() {
         if line.starts_with(";") {
@@ -43,50 +49,51 @@ pub fn draw(
                     }
                 }
 
-                let inverted_y = dimensions.height as f32 - (y.unwrap_or_default() * scale);
-
-                actions.push(SBA::Move(
-                    (x.unwrap_or_default() * scale).min(3999.0),
-                    inverted_y.min(dimensions.height as f32),
+                message.push(SBA::Move(
+                    x.unwrap_or_default() * 0.1,
+                    y.unwrap_or_default() * 0.1,
                 ));
             }
 
             if tokens.contains(&"M4") {
-                actions.push(SBA::PenUp);
-                is_pen_down = false;
+                message.push(SBA::PenUp);
             }
             if tokens.contains(&"M5") {
-                actions.push(SBA::PenDown);
-                is_pen_down = true;
+                message.push(SBA::PenDown);
             }
-        }
-
-        if actions.len() > 220 {
-            let mut msg = BoardMessage::new(messages.len() as u8 + 1);
-
-            if messages.is_empty() {
-                msg.push(BoardAction::StartDrawing);
-            }
-
-            if is_pen_down {
-                msg.push(BoardAction::PenDown);
-            }
-
-            for action in &actions {
-                msg.push(action.clone().into());
-            }
-
-            messages.push(msg);
-
-            actions.clear();
         }
     }
+
+    let size = rect.size();
+
+    while message.bounds().cmplt(size).all() {
+        message.scale(1.1);
+        info!("Scaled up to bounds: {}", message.bounds());
+    }
+
+    while message.bounds().cmpgt(size).any() {
+        message.scale(0.98);
+        info!("Scaled down to bounds: {}", message.bounds());
+
+        let bounds = message.bounds();
+        if bounds.cmpgt(size * 10.0).all() {
+            message.scale(0.1);
+        }
+    }
+
+    for action in &mut message.actions {
+        if let SBA::Move(x, y) = action {
+            let inverted_y = rect.max.y - *y;
+            *y = inverted_y;
+
+            *x += rect.min.x;
+            *y += rect.min.y;
+        }
+    }
+
+    let messages = message.build();
 
     tracing::info!("SVG produced {} messages", messages.len());
-
-    if let Some(last) = messages.last_mut() {
-        last.push(BoardAction::StopDrawing);
-    }
 
     messages
 }

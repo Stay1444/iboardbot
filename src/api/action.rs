@@ -58,7 +58,7 @@ pub async fn handle(
     let mut message = BoardMessage::new(1);
 
     match &job.action {
-        JobAction::DrawSVG { source, scale } => {
+        JobAction::DrawSVG(source) => {
             let svg = match source {
                 SVGSource::Raw(svg) => svg.clone(),
                 SVGSource::Url(url) => {
@@ -70,7 +70,15 @@ pub async fn handle(
                 }
             };
 
-            let messages = utils::svg::draw(board.details.dimensions, svg, *scale, false);
+            let messages = utils::svg::draw(
+                Rect::new(
+                    0.0,
+                    0.0,
+                    board.details.dimensions.width as f32,
+                    board.details.dimensions.height as f32,
+                ),
+                svg,
+            );
             for msg in messages {
                 boards.add_job(id.clone(), JobAction::Raw(msg)).await;
             }
@@ -97,6 +105,36 @@ pub async fn handle(
             message.push(BoardAction::Move(0, 0));
             message.push(BoardAction::PenUp);
             message.push(BoardAction::StopDrawing);
+        }
+        JobAction::DrawSVGGroup(sources) => {
+            let mut svgs = vec![];
+            for source in sources {
+                let svg = match source {
+                    SVGSource::Raw(svg) => svg.clone(),
+                    SVGSource::Url(url) => {
+                        let Ok(svg) = download_svg(url.clone()).await else {
+                            return vec![];
+                        };
+
+                        svg
+                    }
+                };
+
+                svgs.push(svg);
+            }
+
+            let messages = utils::svg::draw_group(
+                Rect::new(
+                    0.0,
+                    0.0,
+                    board.details.dimensions.width as f32,
+                    board.details.dimensions.height as f32,
+                ),
+                svgs,
+            );
+            for msg in messages {
+                boards.add_job(id.clone(), JobAction::Raw(msg)).await;
+            }
         }
     }
 

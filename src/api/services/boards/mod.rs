@@ -107,7 +107,7 @@ impl Actor {
 
                 _ = respond_to.send(job);
             }
-            Message::JobAck { id, job: _ } => {
+            Message::JobAck { id, _job } => {
                 match self.board_states.get(&id) {
                     None | Some((BoardState::Disconnected | BoardState::Working(_), _)) => {
                         _ = self
@@ -203,7 +203,7 @@ enum Message {
     },
     JobAck {
         id: String,
-        job: u32,
+        _job: u32,
     },
     AddJob {
         id: String,
@@ -312,7 +312,10 @@ impl Boards {
     pub async fn ack_job(&self, id: impl Into<String>, job: u32) {
         _ = self
             .sender
-            .send(Message::JobAck { id: id.into(), job })
+            .send(Message::JobAck {
+                id: id.into(),
+                _job: job,
+            })
             .await;
     }
 }

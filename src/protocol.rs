@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, JsonSchema, Clone)]
 pub struct BoardMessage {
-    actions: Vec<BoardAction>,
+    pub actions: Vec<BoardAction>,
 }
 
 impl BoardMessage {
