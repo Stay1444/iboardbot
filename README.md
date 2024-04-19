@@ -4,11 +4,12 @@ Recreated IBoardBot API in Rust.
 
 ![board with globe, linux tux and atom drawn](./images/img0.jpg)
 
-# Building
+# How to run it
 
-Clone the repository and run `cargo build` or `cargo run` to run it.
+[Manual setup](./docs/Setup-Manual.md)
 
-The API will start on port 8080.
+[Docker setup (recommended)](./docs/Setup-Docker.md)
+
 
 # Reconfiguring the board
 
