@@ -8,11 +8,7 @@ pub struct BoardMessage {
 impl BoardMessage {
     pub fn new(id: u8) -> Self {
         Self {
-            actions: vec![
-                BoardAction::StartBlock,
-                BoardAction::BlockNumber(id),
-                BoardAction::StartDrawing,
-            ],
+            actions: vec![BoardAction::StartBlock, BoardAction::BlockNumber(id)],
         }
     }
 
@@ -26,8 +22,6 @@ impl BoardMessage {
         for action in &self.actions {
             result.extend_from_slice(&action.serialize());
         }
-
-        result.extend_from_slice(&BoardAction::StopDrawing.serialize());
 
         result
     }

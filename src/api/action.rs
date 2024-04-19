@@ -11,7 +11,7 @@ use crate::{
     utils::{self, coords::CoordinateProjector},
 };
 
-use super::services::boards::Boards;
+use super::services::boards::{entities::SVGSource, Boards};
 
 #[derive(Deserialize, Debug)]
 pub struct BotActionData {
@@ -58,8 +58,19 @@ pub async fn handle(
     let mut message = BoardMessage::new(1);
 
     match &job.action {
-        JobAction::DrawSVG { svg, scale } => {
-            let messages = utils::svg::draw(board.details.dimensions, svg.clone(), *scale, false);
+        JobAction::DrawSVG { source, scale } => {
+            let svg = match source {
+                SVGSource::Raw(svg) => svg.clone(),
+                SVGSource::Url(url) => {
+                    let Ok(svg) = download_svg(url.clone()).await else {
+                        return vec![];
+                    };
+
+                    svg
+                }
+            };
+
+            let messages = utils::svg::draw(board.details.dimensions, svg, *scale, false);
             for msg in messages {
                 boards.add_job(id.clone(), JobAction::Raw(msg)).await;
             }
@@ -73,7 +84,25 @@ pub async fn handle(
         JobAction::Raw(message) => {
             return message.encode();
         }
+        JobAction::Calibrate => {
+            message.push(BoardAction::StartDrawing);
+            message.push(BoardAction::Move(0, 0));
+            message.push(BoardAction::PenDown);
+            message.push(BoardAction::Move(0, board.details.dimensions.height as u16));
+            message.push(BoardAction::Move(
+                board.details.dimensions.width as u16,
+                board.details.dimensions.height as u16,
+            ));
+            message.push(BoardAction::Move(board.details.dimensions.width as u16, 0));
+            message.push(BoardAction::Move(0, 0));
+            message.push(BoardAction::PenUp);
+            message.push(BoardAction::StopDrawing);
+        }
     }
 
     message.encode()
+}
+
+async fn download_svg(url: String) -> anyhow::Result<String> {
+    Ok(reqwest::get(url).await?.text().await?)
 }

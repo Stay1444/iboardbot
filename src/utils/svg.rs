@@ -4,7 +4,10 @@ use bevy_math::Vec2;
 use tracing::info;
 use uuid::{Timestamp, Uuid};
 
-use crate::{api::services::boards::entities::BoardDimensions, protocol::{BoardAction, BoardMessage}};
+use crate::{
+    api::services::boards::entities::BoardDimensions,
+    protocol::{BoardAction, BoardMessage},
+};
 
 use super::{coords::CoordinateProjector, SBA};
 
@@ -40,9 +43,11 @@ pub fn draw(
                     }
                 }
 
+                let inverted_y = dimensions.height as f32 - (y.unwrap_or_default() * scale);
+
                 actions.push(SBA::Move(
                     (x.unwrap_or_default() * scale).min(3999.0),
-                    (y.unwrap_or_default() * scale).min(3999.0),
+                    inverted_y.min(dimensions.height as f32),
                 ));
             }
 
@@ -59,6 +64,10 @@ pub fn draw(
         if actions.len() > 220 {
             let mut msg = BoardMessage::new(messages.len() as u8 + 1);
 
+            if messages.is_empty() {
+                msg.push(BoardAction::StartDrawing);
+            }
+
             if is_pen_down {
                 msg.push(BoardAction::PenDown);
             }
@@ -74,6 +83,10 @@ pub fn draw(
     }
 
     tracing::info!("SVG produced {} messages", messages.len());
+
+    if let Some(last) = messages.last_mut() {
+        last.push(BoardAction::StopDrawing);
+    }
 
     messages
 }
