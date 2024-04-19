@@ -2,6 +2,8 @@
 
 Recreated IBoardBot API in Rust.
 
+![board with globe, linux tux and atom drawn](./images/img0.jpg)
+
 # Building
 
 Clone the repository and run `cargo build` or `cargo run` to run it.
