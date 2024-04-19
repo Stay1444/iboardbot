@@ -156,18 +156,6 @@ pub async fn handle(
         }
         JobAction::Erase => {
             boards.clear_space(&id).await;
-            message.push(BoardAction::Eraser);
-            for y in (0..board.details.dimensions.height).step_by(150) {
-                message.push(BoardAction::Move(0, y as u16));
-                message.push(BoardAction::Move(
-                    board.details.dimensions.width as u16,
-                    y as u16,
-                ));
-            }
-
-            message.push(BoardAction::Eraser);
-            message.push(BoardAction::PenUp);
-            message.push(BoardAction::StopDrawing);
         }
     }
 
