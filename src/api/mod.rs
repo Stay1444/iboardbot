@@ -4,6 +4,9 @@ use aide::{axum::ApiRouter, openapi::OpenApi, transform::TransformOpenApi};
 use axum::{extract::FromRef, response::Redirect, routing::get, Extension};
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
+use tracing::info;
+
+use crate::config::Config;
 
 use self::services::boards::Boards;
 
@@ -17,7 +20,7 @@ struct AppState {
     boards: Boards,
 }
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run(config: Config) -> anyhow::Result<()> {
     let state = AppState {
         boards: Boards::new(),
     };
@@ -41,7 +44,13 @@ pub async fn run() -> anyhow::Result<()> {
         .layer(Extension(Arc::new(open_api)))
         .into_make_service();
 
-    let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
+    info!("Listening on 0.0.0.0:{}", config.port);
+    info!("API Docs available on http://0.0.0.0:{}/docs", config.port);
+
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port))
+        .await
+        .unwrap();
+
     axum::serve(listener, service).await?;
 
     Ok(())

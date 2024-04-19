@@ -42,6 +42,8 @@ impl Actor {
                     return;
                 }
 
+                info!("Board {} connected", id);
+
                 let details = load_detals(&id);
                 let board = Board {
                     id: id.clone(),
@@ -185,6 +187,12 @@ fn load_detals(id: &str) -> BoardDetails {
         let yaml = std::fs::read_to_string(path).unwrap();
         return serde_yaml::from_str(&yaml).unwrap();
     } else {
+        info!(
+            "Created default board details for board {} in {}",
+            id,
+            path.display()
+        );
+
         let details = BoardDetails::default();
 
         let yaml = serde_yaml::to_string(&details).unwrap();

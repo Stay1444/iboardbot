@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::Command};
 
 use bevy_math::{Rect, Vec2};
-use tracing::{error, info};
+use tracing::{debug, error};
 use uuid::Uuid;
 
 use crate::{
@@ -87,12 +87,12 @@ pub fn draw(rect: Rect, svg: String) -> (Vec<BoardMessage>, Rect) {
 
     while message.bounds().cmplt(size).all() {
         message.scale(1.1);
-        info!("Scaled up to bounds: {}", message.bounds());
+        debug!("Scaled up to bounds: {}", message.bounds());
     }
 
     while message.bounds().cmpgt(size).any() {
         message.scale(0.98);
-        info!("Scaled down to bounds: {}", message.bounds());
+        debug!("Scaled down to bounds: {}", message.bounds());
 
         let bounds = message.bounds();
         if bounds.cmpgt(size * 10.0).all() {
@@ -113,7 +113,7 @@ pub fn draw(rect: Rect, svg: String) -> (Vec<BoardMessage>, Rect) {
     let message_bounds = message.bounds();
     let mut messages = message.build();
 
-    tracing::info!("SVG produced {} messages", messages.len());
+    tracing::debug!("SVG produced {} messages", messages.len());
 
     if let Some(last) = messages.last_mut() {
         last.push(BoardAction::StopDrawing);

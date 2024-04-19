@@ -1,4 +1,7 @@
+use clap::Parser;
+
 pub mod api;
+pub mod config;
 pub mod protocol;
 pub mod sessions;
 pub mod utils;
@@ -7,7 +10,9 @@ pub mod utils;
 async fn main() {
     setup_logging();
 
-    api::run().await.unwrap();
+    let config = config::Config::parse();
+
+    api::run(config).await.unwrap();
 }
 
 fn setup_logging() {
