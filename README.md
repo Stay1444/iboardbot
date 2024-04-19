@@ -45,7 +45,7 @@ Change `0.0.0.0` for the IP and port of your API.
 ```sh
 $ curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{ "WriteText": "Hello" }' \ # Replace "Hello" with the text that you want to draw
+  -d '{ "WriteText": { "text": "Hello" } }' \ # Replace "Hello" with the text that you want to draw
   http://0.0.0.0/boards/{boardId}/jobs
 ```
 
