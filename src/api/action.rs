@@ -1,14 +1,16 @@
+use std::time::Duration;
+
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
-use bevy_math::{Rect, Vec2};
+use bevy_math::Rect;
 use serde::Deserialize;
 
 use crate::{
     api::services::boards::entities::JobAction,
     protocol::{BoardAction, BoardMessage},
-    utils::{self, coords::CoordinateProjector},
+    utils::{self},
 };
 
 use super::services::boards::{entities::SVGSource, Boards};
@@ -45,19 +47,18 @@ pub async fn handle(
 
     let board = boards.get(&id).await;
 
-    let job = boards.get_job(id.clone()).await;
-
-    let projector = CoordinateProjector::new(Rect::from_corners(
-        Vec2::ZERO,
-        Vec2::new(
-            board.details.dimensions.width as f32,
-            board.details.dimensions.height as f32,
-        ),
-    ));
-
     let mut message = BoardMessage::new(1);
+    let mut job = tokio::select! {
+        job = boards.get_job(id.clone()) => {
+            job
+        },
+        _ = tokio::time::sleep(Duration::from_secs(5)) => {
+            message.push(BoardAction::Wait(1));
+            return message.encode();
+        }
+    };
 
-    match &job.action {
+    match &mut job.action {
         JobAction::DrawSVG(source) => {
             let svg = match source {
                 SVGSource::Raw(svg) => svg.clone(),
@@ -70,24 +71,38 @@ pub async fn handle(
                 }
             };
 
-            let messages = utils::svg::draw(
+            let (messages, taken) = utils::svg::draw(
                 Rect::new(
-                    0.0,
-                    0.0,
-                    board.details.dimensions.width as f32,
-                    board.details.dimensions.height as f32,
+                    board.available.0,
+                    board.available.1,
+                    board.available.2,
+                    board.available.3,
                 ),
                 svg,
             );
+
+            boards.report_space_taken(&id, taken).await;
+
             for msg in messages {
                 boards.add_job(id.clone(), JobAction::Raw(msg)).await;
             }
         }
-        JobAction::WriteLines(lines) => {
-            utils::text::write(&mut message, lines.clone(), 400.0, projector, false)
-        }
-        JobAction::EraseLines(lines) => {
-            utils::text::write(&mut message, lines.clone(), 400.0, projector, true)
+        JobAction::WriteText(lines) => {
+            let (messages, taken) = utils::text::write(
+                Rect::new(
+                    board.available.0,
+                    board.available.1,
+                    board.available.2,
+                    board.available.3,
+                ),
+                lines.clone(),
+            );
+
+            boards.report_space_taken(&id, taken).await;
+
+            for msg in messages {
+                boards.add_job(id.clone(), JobAction::Raw(msg)).await;
+            }
         }
         JobAction::Raw(message) => {
             return message.encode();
@@ -123,18 +138,36 @@ pub async fn handle(
                 svgs.push(svg);
             }
 
-            let messages = utils::svg::draw_group(
+            let (messages, taken) = utils::svg::draw_group(
                 Rect::new(
-                    0.0,
-                    0.0,
-                    board.details.dimensions.width as f32,
-                    board.details.dimensions.height as f32,
+                    board.available.0,
+                    board.available.1,
+                    board.available.2,
+                    board.available.3,
                 ),
                 svgs,
             );
+
+            boards.report_space_taken(&id, taken).await;
+
             for msg in messages {
                 boards.add_job(id.clone(), JobAction::Raw(msg)).await;
             }
+        }
+        JobAction::Erase => {
+            boards.clear_space(&id).await;
+            message.push(BoardAction::Eraser);
+            for y in (0..board.details.dimensions.height).step_by(150) {
+                message.push(BoardAction::Move(0, y as u16));
+                message.push(BoardAction::Move(
+                    board.details.dimensions.width as u16,
+                    y as u16,
+                ));
+            }
+
+            message.push(BoardAction::Eraser);
+            message.push(BoardAction::PenUp);
+            message.push(BoardAction::StopDrawing);
         }
     }
 

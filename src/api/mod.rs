@@ -3,6 +3,7 @@ use std::sync::Arc;
 use aide::{axum::ApiRouter, openapi::OpenApi, transform::TransformOpenApi};
 use axum::{extract::FromRef, response::Redirect, routing::get, Extension};
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 
 use self::services::boards::Boards;
 
@@ -36,6 +37,7 @@ pub async fn run() -> anyhow::Result<()> {
         .route("/", get(|| async { Redirect::permanent("/docs") }))
         .with_state(state)
         .finish_api_with(&mut open_api, cfg_docs)
+        .layer(CorsLayer::permissive())
         .layer(Extension(Arc::new(open_api)))
         .into_make_service();
 

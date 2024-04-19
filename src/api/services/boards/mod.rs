@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 
-use chrono::{DateTime, TimeDelta, Utc};
+use bevy_math::Rect;
+use chrono::{TimeDelta, Utc};
 use lazy_static::lazy_static;
 use rand::Rng;
 use tokio::sync::{mpsc, oneshot};
@@ -16,7 +17,7 @@ lazy_static! {
 
 struct Actor {
     receiver: mpsc::Receiver<Message>,
-    board_states: HashMap<String, (BoardState, DateTime<Utc>)>,
+    boards: HashMap<String, Board>,
     job_callbacks: HashMap<String, Vec<oneshot::Sender<Job>>>,
     pending_jobs: HashMap<String, Vec<Job>>,
 }
@@ -25,7 +26,7 @@ impl Actor {
     pub fn new(receiver: mpsc::Receiver<Message>) -> Self {
         Self {
             receiver,
-            board_states: HashMap::new(),
+            boards: HashMap::new(),
             job_callbacks: HashMap::new(),
             pending_jobs: HashMap::new(),
         }
@@ -33,16 +34,29 @@ impl Actor {
     pub async fn handle(&mut self, message: Message) {
         match message {
             Message::GetBoard { id, respond_to } => {
-                let state = match self.board_states.get(&id) {
-                    Some(state) => state.0.clone(),
-                    None => BoardState::Disconnected,
-                };
+                let board = self.boards.get(&id);
 
+                if let Some(board) = board {
+                    let board = board.clone();
+                    _ = respond_to.send(board);
+                    return;
+                }
+
+                let details = load_detals(&id);
                 let board = Board {
                     id: id.clone(),
-                    state,
-                    details: load_detals(&id),
+                    state: BoardState::Unknown,
+                    available: (
+                        0.0,
+                        0.0,
+                        details.dimensions.width as f32,
+                        details.dimensions.height as f32,
+                    ),
+                    last_update: Utc::now(),
+                    details,
                 };
+
+                self.boards.insert(id, board.clone());
 
                 _ = respond_to.send(board);
             }
@@ -51,31 +65,27 @@ impl Actor {
             }
             Message::Cleanup => {
                 let mut to_remove: Vec<String> = vec![];
-                for (key, (state, last_update)) in &self.board_states {
-                    if *state != BoardState::Disconnected
-                        && *last_update - Utc::now() > TimeDelta::seconds(30)
+                for (key, board) in &self.boards {
+                    if board.state != BoardState::Disconnected
+                        && board.last_update - Utc::now() > TimeDelta::seconds(30)
                     {
                         to_remove.push(key.clone());
                     }
                 }
 
                 for key in to_remove {
-                    self.board_states.remove(&key);
+                    self.boards.remove(&key);
                 }
             }
             Message::GetJob { id, respond_to } => {
-                match self.board_states.get(&id) {
-                    None | Some((BoardState::Disconnected, _)) => {
-                        _ = self
-                            .board_states
-                            .insert(id.clone(), (BoardState::Ready, Utc::now()))
-                    }
-                    _ => (),
+                let Some(board) = self.boards.get_mut(&id) else {
+                    return;
                 };
 
-                info!("Board waiting for job");
-
                 let jobs = self.pending_jobs.get_mut(&id);
+
+                board.last_update = Utc::now();
+                board.state = BoardState::Ready;
 
                 let Some(jobs) = jobs else {
                     let callbacks = self.job_callbacks.get_mut(&id);
@@ -102,20 +112,16 @@ impl Actor {
 
                 let job = jobs.remove(0);
 
-                self.board_states
-                    .insert(id.clone(), (BoardState::Working(job.clone()), Utc::now()));
+                board.state = BoardState::Working(job.clone());
 
                 _ = respond_to.send(job);
             }
             Message::JobAck { id, _job } => {
-                match self.board_states.get(&id) {
-                    None | Some((BoardState::Disconnected | BoardState::Working(_), _)) => {
-                        _ = self
-                            .board_states
-                            .insert(id.clone(), (BoardState::Ready, Utc::now()))
-                    }
-                    _ => (),
-                };
+                let board = self.boards.get_mut(&id);
+                if let Some(board) = board {
+                    board.state = BoardState::Ready;
+                    board.last_update = Utc::now();
+                }
             }
             Message::AddJob { id, job } => {
                 let callbacks = self.job_callbacks.remove(&id);
@@ -137,13 +143,10 @@ impl Actor {
             }
             Message::List { respond_to } => {
                 let mut res = vec![];
-                for (key, (state, _)) in &self.board_states {
-                    let board = Board {
-                        id: key.clone(),
-                        state: state.clone(),
-                        details: load_detals(key.as_str()),
-                    };
-                    res.push(board);
+                for (key, board) in &mut self.boards {
+                    let details = load_detals(key.as_str());
+                    board.details = details;
+                    res.push(board.clone());
                 }
 
                 _ = respond_to.send(res);
@@ -151,6 +154,20 @@ impl Actor {
             Message::ListPendingJobs { respond_to, id } => {
                 let jobs = self.pending_jobs.get(&id).cloned().unwrap_or_default();
                 _ = respond_to.send(jobs);
+            }
+            Message::ReportSpaceTaken { id, space } => {
+                let Some(board) = self.boards.get_mut(&id) else {
+                    return;
+                };
+
+                board.available.0 += space.max.x + 10.0; // padding
+            }
+            Message::ClearSpace { id } => {
+                let Some(board) = self.boards.get_mut(&id) else {
+                    return;
+                };
+
+                board.available.0 = 0.0;
             }
         }
     }
@@ -216,6 +233,13 @@ enum Message {
         id: String,
         respond_to: oneshot::Sender<Vec<Job>>,
     },
+    ReportSpaceTaken {
+        id: String,
+        space: Rect,
+    },
+    ClearSpace {
+        id: String,
+    },
 }
 
 #[derive(Clone)]
@@ -255,6 +279,19 @@ impl Boards {
             .await;
 
         rx.await.expect("Actor closed")
+    }
+
+    pub async fn report_space_taken(&self, id: impl Into<String>, space: Rect) {
+        let msg = Message::ReportSpaceTaken {
+            id: id.into(),
+            space,
+        };
+        _ = self.sender.send(msg).await;
+    }
+
+    pub async fn clear_space(&self, id: impl Into<String>) {
+        let msg = Message::ClearSpace { id: id.into() };
+        _ = self.sender.send(msg).await;
     }
 
     pub async fn get(&self, id: impl Into<String>) -> Board {

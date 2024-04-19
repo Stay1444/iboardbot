@@ -1,9 +1,7 @@
-use bevy_math::{Rect, Vec2};
+use bevy_math::Vec2;
 
 use crate::protocol::{BoardAction, BoardMessage};
 
-pub mod coords;
-pub mod qtree;
 pub mod svg;
 pub mod text;
 
@@ -62,6 +60,7 @@ impl SBM {
 
             if pen_down {
                 msg.push(BoardAction::PenDown);
+                pen_down = false;
             }
 
             while msg.actions.len() < 200 && !self.actions.is_empty() {
@@ -77,6 +76,12 @@ impl SBM {
             }
 
             messages.push(msg);
+        }
+
+        if pen_down {
+            if let Some(message) = messages.last_mut() {
+                message.push(BoardAction::PenUp);
+            }
         }
 
         messages

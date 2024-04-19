@@ -1,30 +1,49 @@
 use std::{path::PathBuf, process::Command};
 
 use bevy_math::{Rect, Vec2};
-use tracing::info;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    protocol::BoardMessage,
-    utils::{qtree::QuadTree, SBM},
+    protocol::{BoardAction, BoardMessage},
+    utils::SBM,
 };
 
 use super::SBA;
 
-pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> Vec<BoardMessage> {
-    let mut qtree = QuadTree::<String>::new(bounds, 4);
+pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> (Vec<BoardMessage>, Rect) {
     let mut messages = vec![];
+    let mut boxes = vec![];
 
-    qtree.feed(svgs);
+    let width = bounds.width() / svgs.len() as f32;
 
-    qtree.iter(&mut |rect, svg| {
-        messages.append(&mut draw(rect, svg));
-    });
+    for i in 0..svgs.len() {
+        let x0 = (i as f32 * width) + bounds.min.x;
+        boxes.push(Rect::new(x0, bounds.min.y, x0 + width, bounds.max.y));
+    }
 
-    messages
+    if boxes.len() != svgs.len() {
+        error!(
+            "Disparity between boxes and svgs! {} {}",
+            boxes.len(),
+            svgs.len()
+        );
+
+        return (messages, Rect::new(0.0, 0.0, 0.0, 0.0));
+    }
+
+    for i in 0..boxes.len() {
+        let svg = svgs[i].clone();
+        let rect = boxes[i];
+        let (mut res, _) = draw(rect, svg);
+
+        messages.append(&mut res);
+    }
+
+    (messages, bounds)
 }
 
-pub fn draw(rect: Rect, svg: String) -> Vec<BoardMessage> {
+pub fn draw(rect: Rect, svg: String) -> (Vec<BoardMessage>, Rect) {
     let gcode = generate_gcode(svg);
 
     let mut message = SBM::new(1);
@@ -91,11 +110,16 @@ pub fn draw(rect: Rect, svg: String) -> Vec<BoardMessage> {
         }
     }
 
-    let messages = message.build();
+    let message_bounds = message.bounds();
+    let mut messages = message.build();
 
     tracing::info!("SVG produced {} messages", messages.len());
 
-    messages
+    if let Some(last) = messages.last_mut() {
+        last.push(BoardAction::StopDrawing);
+    }
+
+    (messages, Rect::from_corners(Vec2::ZERO, message_bounds))
 }
 
 fn generate_gcode(svg: String) -> String {

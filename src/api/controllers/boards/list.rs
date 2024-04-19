@@ -1,5 +1,6 @@
 use aide::transform::TransformOperation;
 use axum::{extract::State, Json};
+use chrono::Utc;
 
 use crate::api::services::boards::{
     entities::{Board, BoardDetails, BoardState},
@@ -20,6 +21,8 @@ pub fn docs(op: TransformOperation) -> TransformOperation {
                 id: "ABC-MAIN".into(),
                 state: BoardState::Ready,
                 details: BoardDetails::default(),
+                available: (0.0, 0.0, 1000.0, 1000.0),
+                last_update: Utc::now(),
             }])
         })
 }

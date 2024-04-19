@@ -5,6 +5,7 @@ use aide::{
     },
     transform::TransformPathItem,
 };
+use axum::routing::post;
 
 use crate::api::AppState;
 
@@ -29,6 +30,7 @@ pub fn routes(state: AppState) -> ApiRouter {
             post_with(jobs::add::action, jobs::add::docs),
             docs,
         )
+        .route("/jobs/:boardId/file", post(jobs::add::action_multipart))
         .api_route_with(
             "/jobs/:boardId/active",
             get_with(jobs::current::action, jobs::current::docs),

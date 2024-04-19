@@ -1,24 +1,29 @@
+use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol::BoardMessage;
 
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, JsonSchema, Clone)]
 pub struct Board {
     pub id: String,
     pub state: BoardState,
+    pub last_update: DateTime<Utc>,
     pub details: BoardDetails,
+
+    pub available: (f32, f32, f32, f32),
 }
 
 #[derive(Serialize, JsonSchema, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum BoardState {
+    Unknown,
     Disconnected,
     Ready,
     Working(Job),
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct BoardDetails {
     pub dimensions: BoardDimensions,
 }
@@ -34,7 +39,7 @@ impl Default for BoardDetails {
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct BoardDimensions {
     pub width: u32,
     pub height: u32,
@@ -51,9 +56,9 @@ pub enum JobAction {
     DrawSVG(SVGSource),
     DrawSVGGroup(Vec<SVGSource>),
     Calibrate,
-    WriteLines(Vec<String>),
-    EraseLines(Vec<String>),
+    WriteText(String),
     Raw(BoardMessage),
+    Erase,
 }
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema, PartialEq)]
