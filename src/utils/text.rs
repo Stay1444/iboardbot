@@ -1,20 +1,69 @@
 use std::{
     io::Read,
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
 use bevy_math::Rect;
+use tracing::error;
 
 use crate::protocol::BoardMessage;
 
 use super::svg;
 
-pub fn write(rect: Rect, text: String) -> (Vec<BoardMessage>, Rect) {
+fn get_font(font: Option<String>) -> anyhow::Result<Option<PathBuf>> {
+    if let Some(font) = font {
+        // TODO: Possible read out of fonts directory here.
+        if font.contains("..") || font.contains("/") {
+            // tenor suspicious file
+            return Ok(None);
+        }
+
+        let mut font_path = PathBuf::new();
+        font_path.push("fonts");
+        font_path.push(font);
+
+        return Ok(Some(font_path));
+    }
+
+    let mut path = PathBuf::new();
+    path.push("fonts");
+
+    for file in path.read_dir()? {
+        let file = file?;
+        let path = file.path();
+
+        let extension = path
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default();
+
+        if extension == "svg" {
+            return Ok(Some(path));
+        }
+    }
+
+    Ok(None)
+}
+
+pub fn write(
+    rect: Rect,
+    text: String,
+    font: Option<String>,
+) -> anyhow::Result<(Vec<BoardMessage>, Rect)> {
+    let font_path = get_font(font)?;
+
+    let Some(font_path) = font_path else {
+        error!("Could not draw text as no font was specified!");
+        return Ok((vec![], Rect::new(0., 0., 0., 0.)));
+    };
+
     let mut args = vec![];
 
     args.push(text.as_str());
     args.push("-f");
-    args.push("./fonts/Roboto.ttf");
+    args.push(font_path.to_str().unwrap_or_default());
 
     let mut child = Command::new("text2svg")
         .args(&args)
@@ -28,5 +77,5 @@ pub fn write(rect: Rect, text: String) -> (Vec<BoardMessage>, Rect) {
 
     _ = stdout.read_to_string(&mut data);
 
-    svg::draw(rect, data)
+    Ok(svg::draw(rect, data))
 }

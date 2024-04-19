@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::api::services::boards::{
-    entities::{BoardState, Job, JobAction},
+    entities::{BoardState, Job, JobAction, WriteText},
     Boards,
 };
 
@@ -25,7 +25,10 @@ pub fn docs(op: TransformOperation) -> TransformOperation {
             res.example(Job {
                 id: 62,
 
-                action: JobAction::WriteText("Hello".into()),
+                action: JobAction::WriteText(WriteText {
+                    text: "Hello".into(),
+                    font: Some("Roboto.ttf".into()),
+                }),
             })
         })
 }

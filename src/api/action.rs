@@ -87,16 +87,19 @@ pub async fn handle(
                 boards.add_job(id.clone(), JobAction::Raw(msg)).await;
             }
         }
-        JobAction::WriteText(lines) => {
-            let (messages, taken) = utils::text::write(
+        JobAction::WriteText(data) => {
+            let Ok((messages, taken)) = utils::text::write(
                 Rect::new(
                     board.available.0,
                     board.available.1,
                     board.available.2,
                     board.available.3,
                 ),
-                lines.clone(),
-            );
+                data.text.clone(),
+                data.font.clone(),
+            ) else {
+                return vec![];
+            };
 
             boards.report_space_taken(&id, taken).await;
 

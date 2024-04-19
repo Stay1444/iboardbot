@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::api::services::boards::{
-    entities::{Job, JobAction},
+    entities::{Job, JobAction, WriteText},
     Boards,
 };
 
@@ -21,7 +21,11 @@ pub fn docs(op: TransformOperation) -> TransformOperation {
         .response_with::<200, Json<Vec<Job>>, _>(|res| {
             res.example(vec![Job {
                 id: 21,
-                action: JobAction::WriteText("Hello".into()),
+
+                action: JobAction::WriteText(WriteText {
+                    text: "Hello".into(),
+                    font: Some("Roboto.ttf".into()),
+                }),
             }])
         })
 }

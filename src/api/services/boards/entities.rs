@@ -56,7 +56,7 @@ pub enum JobAction {
     DrawSVG(SVGSource),
     DrawSVGGroup(Vec<SVGSource>),
     Calibrate,
-    WriteText(String),
+    WriteText(WriteText),
     Raw(BoardMessage),
     Erase,
 }
@@ -65,4 +65,11 @@ pub enum JobAction {
 pub enum SVGSource {
     Raw(String),
     Url(String),
+}
+
+#[derive(Serialize, Deserialize, Clone, JsonSchema, PartialEq)]
+pub struct WriteText {
+    pub text: String,
+    #[serde(default)]
+    pub font: Option<String>,
 }

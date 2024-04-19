@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::api::services::boards::{
-    entities::{Job, JobAction, SVGSource},
+    entities::{Job, JobAction, SVGSource, WriteText},
     Boards,
 };
 
@@ -38,7 +38,10 @@ pub async fn action_multipart(
 
     return Json(Job {
         id: 0,
-        action: JobAction::WriteText("You did something wrong dude".into()),
+        action: JobAction::WriteText(WriteText {
+            text: "You did something wrong dude".into(),
+            font: None,
+        }),
     });
 }
 
@@ -48,7 +51,10 @@ pub fn docs(op: TransformOperation) -> TransformOperation {
         .response_with::<200, Json<Job>, _>(|res| {
             res.example(Job {
                 id: 62,
-                action: JobAction::WriteText("Hello".into()),
+                action: JobAction::WriteText(WriteText {
+                    text: "Hello".into(),
+                    font: Some("Roboto.ttf".into()),
+                }),
             })
         })
 }
