@@ -15,13 +15,27 @@ fn get_font(font: Option<String>) -> anyhow::Result<Option<PathBuf>> {
     if let Some(font) = font {
         // TODO: Possible read out of fonts directory here.
         if font.contains("..") || font.contains("/") {
-            // tenor suspicious file
-            return Ok(None);
+            // suspicious file, try with default font
+            return get_font(None);
         }
 
         let mut font_path = PathBuf::new();
         font_path.push("fonts");
         font_path.push(font);
+
+        if !font_path.exists() {
+            return get_font(None);
+        }
+
+        let extension = font_path
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default();
+
+        if extension != "ttf" {
+            return get_font(None);
+        }
 
         return Ok(Some(font_path));
     }
@@ -39,7 +53,7 @@ fn get_font(font: Option<String>) -> anyhow::Result<Option<PathBuf>> {
             .to_str()
             .unwrap_or_default();
 
-        if extension == "svg" {
+        if extension == "ttf" {
             return Ok(Some(path));
         }
     }
