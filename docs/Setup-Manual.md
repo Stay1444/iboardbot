@@ -14,6 +14,13 @@ Dependencies that I will explain how to get below:
 - svg2gcode - Needed for drawing svgs
 - text2svg - Needed for writing text to the board
 
+## Installing Dependencies (Debian)
+
+```sh
+$ sudo apt-get update 
+$ sudo apt-get install -y openssl libssl-dev ruby-full libfreetype-dev build-essential gcc libffi-dev ruby-dev
+```
+
 ## Building
 
 Clone the repository
