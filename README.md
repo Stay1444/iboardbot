@@ -10,30 +10,24 @@ Recreated IBoardBot API in Rust.
 
 [Docker setup (recommended)](./docs/Setup-Docker.md)
 
+[Reconfiguring the board](./docs/Flash-Arduino.md)
 
-# Reconfiguring the board
+# Adding fonts
 
-You'll need to reconfigure (and reflash) the board so it points to the new API instead of the old JJRobots API.
+The `./fonts` directory is used to draw text on the board. You can specify which `ttf` font to use on the JSON request. It will use a default one if no font is specified.
 
-Simply open the Configuration.h file and find the following lines
+# Board Configuration
 
-```c
-#define SERVER_HOST "0.0.0.0"
-#define SERVER_URL "http://0.0.0.0:8080/_/board/main"
-```
+The first time that a board connects to the API a configuration file for that board will be created under `./boards`. If you named your board `main`, the configuration file will be `./boards/main.yaml`
 
-Note that instead of using 0.0.0.0 you'll need to put the actual ip of the server / computer where you are hosting the API.
-
-If you want to connect multiple boards, the "main" is the board name, so you can change that to represent different boards, eg:
-
-```c
-#define SERVER_URL "http://0.0.0.0:8080/_/board/other-board-1"
-#define SERVER_URL "http://0.0.0.0:8080/_/board/my-board"
-// etc
-```
-
-The first time that the board connects to the API, the API will create a configuration file for that board under `./boards/main.yaml` (or whatever you called your board). There you can set the board dimensions. You can then check if those dimensions are alright by queue-ing the Calibrate job, which will draw a rectangle based on the specified board bounds.
+In this file you can specify the board dimensions (size). Ive found that for the board that is shown on the images, `3500` (width) X `1000` (height) works fine.
 
 # API Docs
 
 You can find the API docs at the `/docs` endpoint in the API.
+
+# Frontend / Easy to use app
+
+At the moment the only real way to use it is sending HTTP requests to the API, which you can find the docs on the `/docs` endpoint. 
+
+I'm working on an easy to use frontend so be patient for that. 
