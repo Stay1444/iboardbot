@@ -6,6 +6,7 @@ use axum::{
 };
 use bevy_math::Rect;
 use serde::Deserialize;
+use tracing::warn;
 
 use crate::{
     api::services::boards::entities::JobAction,
@@ -43,6 +44,11 @@ pub async fn handle(
         boards.ack_job(id, block_id).await;
 
         return vec![];
+    }
+
+    if id == "{boardId}" {
+        warn!("If you are seeing this its because a board with a boardId of {{boardId}} connected, which means that you did something wrong somewhere.
+            If you are sending this from the docs page remember adding a Variable called boardId with your board name.");
     }
 
     let board = boards.get(&id).await;

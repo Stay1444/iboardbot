@@ -13,6 +13,7 @@ use self::services::boards::Boards;
 mod action;
 mod controllers;
 mod docs;
+pub mod response;
 pub mod services;
 
 #[derive(FromRef, Clone)]
