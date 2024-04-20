@@ -47,9 +47,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
     info!("Listening on 0.0.0.0:{}", config.port);
     info!("API Docs available on http://0.0.0.0:{}/docs", config.port);
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port))
-        .await
-        .unwrap();
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", config.port)).await?;
 
     axum::serve(listener, service).await?;
 

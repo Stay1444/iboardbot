@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, JsonSchema, Clone)]
 pub struct BoardMessage {
-    pub actions: Vec<BoardAction>,
+    actions: Vec<BoardAction>,
 }
 
 impl BoardMessage {
@@ -24,6 +24,10 @@ impl BoardMessage {
         }
 
         result
+    }
+
+    pub fn len(&self) -> usize {
+        self.actions.len()
     }
 }
 
@@ -57,7 +61,6 @@ impl BoardAction {
 }
 
 fn packet(c1: u16, c2: u16) -> [u8; 3] {
-    // Combine C1 and C2 into a 24-bit number
     let num: u32 = ((c1 as u32) << 12) | (c2 as u32);
 
     // Convert the 24-bit number into bytes

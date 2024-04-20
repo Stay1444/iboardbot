@@ -5,7 +5,7 @@ use chrono::{TimeDelta, Utc};
 use lazy_static::lazy_static;
 use rand::Rng;
 use tokio::sync::{mpsc, oneshot};
-use tracing::info;
+use tracing::{error, info};
 
 use self::entities::{Board, BoardDetails, BoardState, Job, JobAction};
 
@@ -44,7 +44,14 @@ impl Actor {
 
                 info!("Board {} connected", id);
 
-                let details = load_detals(&id);
+                let details = match load_detals(&id) {
+                    Ok(x) => x,
+                    Err(err) => {
+                        error!("Error loading board details for board {}: {}", id, err);
+                        BoardDetails::default()
+                    }
+                };
+
                 let board = Board {
                     id: id.clone(),
                     state: BoardState::Unknown,
@@ -63,7 +70,9 @@ impl Actor {
                 _ = respond_to.send(board);
             }
             Message::SetBoardDetails { id, details } => {
-                save_details(&id, &details);
+                if let Err(err) = save_details(&id, &details) {
+                    error!("Error saving board details for board {}: {}", id, err);
+                }
             }
             Message::Cleanup => {
                 let mut to_remove: Vec<String> = vec![];
@@ -146,7 +155,14 @@ impl Actor {
             Message::List { respond_to } => {
                 let mut res = vec![];
                 for (key, board) in &mut self.boards {
-                    let details = load_detals(key.as_str());
+                    let details = match load_detals(key.as_str()) {
+                        Ok(x) => x,
+                        Err(err) => {
+                            error!("Error loading board details for board {}: {}", key, err);
+                            continue;
+                        }
+                    };
+
                     board.details = details;
                     res.push(board.clone());
                 }
@@ -173,43 +189,6 @@ impl Actor {
             }
         }
     }
-}
-
-fn load_detals(id: &str) -> BoardDetails {
-    if !CONFIG_FOLDER.exists() {
-        std::fs::create_dir_all(CONFIG_FOLDER.clone()).unwrap();
-    }
-
-    let mut path = CONFIG_FOLDER.clone();
-    path.push(format!("{}.yaml", id));
-
-    if path.exists() {
-        let yaml = std::fs::read_to_string(path).unwrap();
-        return serde_yaml::from_str(&yaml).unwrap();
-    } else {
-        info!(
-            "Created default board details for board {} in {}",
-            id,
-            path.display()
-        );
-
-        let details = BoardDetails::default();
-
-        let yaml = serde_yaml::to_string(&details).unwrap();
-
-        std::fs::write(path, yaml).unwrap();
-
-        return details;
-    }
-}
-
-fn save_details(id: &str, details: &BoardDetails) {
-    let yaml = serde_yaml::to_string(&details).unwrap();
-
-    let mut path = CONFIG_FOLDER.clone();
-    path.push(format!("{}.yaml", id));
-
-    std::fs::write(path, yaml).unwrap();
 }
 
 enum Message {
@@ -377,4 +356,43 @@ async fn cleanup(tx: mpsc::Sender<Message>) {
             break;
         }
     }
+}
+
+fn load_detals(id: &str) -> anyhow::Result<BoardDetails> {
+    if !CONFIG_FOLDER.exists() {
+        std::fs::create_dir_all(CONFIG_FOLDER.clone())?;
+    }
+
+    let mut path = CONFIG_FOLDER.clone();
+    path.push(format!("{}.yaml", id));
+
+    if path.exists() {
+        let yaml = std::fs::read_to_string(path)?;
+        return Ok(serde_yaml::from_str(&yaml)?);
+    } else {
+        info!(
+            "Created default board details for board {} in {}",
+            id,
+            path.display()
+        );
+
+        let details = BoardDetails::default();
+
+        let yaml = serde_yaml::to_string(&details)?;
+
+        std::fs::write(path, yaml)?;
+
+        return Ok(details);
+    }
+}
+
+fn save_details(id: &str, details: &BoardDetails) -> anyhow::Result<()> {
+    let yaml = serde_yaml::to_string(&details)?;
+
+    let mut path = CONFIG_FOLDER.clone();
+    path.push(format!("{}.yaml", id));
+
+    std::fs::write(path, yaml)?;
+
+    Ok(())
 }

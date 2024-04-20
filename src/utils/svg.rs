@@ -6,10 +6,8 @@ use uuid::Uuid;
 
 use crate::{
     protocol::{BoardAction, BoardMessage},
-    utils::SBM,
+    utils::software_board::{SBA, SBM},
 };
-
-use super::SBA;
 
 pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> (Vec<BoardMessage>, Rect) {
     let mut messages = vec![];

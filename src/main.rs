@@ -1,9 +1,9 @@
 use clap::Parser;
+use tracing::error;
 
 pub mod api;
 pub mod config;
 pub mod protocol;
-pub mod sessions;
 pub mod utils;
 
 #[tokio::main]
@@ -12,7 +12,9 @@ async fn main() {
 
     let config = config::Config::parse();
 
-    api::run(config).await.unwrap();
+    if let Err(err) = api::run(config).await {
+        error!("Error running API: {err}");
+    }
 }
 
 fn setup_logging() {

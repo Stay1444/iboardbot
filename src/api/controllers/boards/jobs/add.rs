@@ -23,9 +23,9 @@ pub async fn action_multipart(
     Path(id): Path<String>,
     mut multipart: Multipart,
 ) -> Json<Job> {
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
-        let data = field.text().await.unwrap();
+    while let Some(field) = multipart.next_field().await.unwrap_or_default() {
+        let name = field.name().unwrap_or_default().to_string();
+        let data = field.text().await.unwrap_or_default();
 
         if name == "svg" {
             let job = boards
