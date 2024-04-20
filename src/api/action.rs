@@ -88,7 +88,7 @@ pub async fn handle(
             }
         }
         JobAction::WriteText(data) => {
-            let Ok((messages, taken)) = utils::text::write(
+            let Ok((messages, taken)) = utils::text::renderer::render(
                 Rect::new(
                     board.available.0,
                     board.available.1,
