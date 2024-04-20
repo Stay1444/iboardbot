@@ -38,11 +38,9 @@ impl Actor {
 
                 if let Some(board) = board {
                     let board = board.clone();
-                    _ = respond_to.send(board);
+                    _ = respond_to.send((board, false));
                     return;
                 }
-
-                info!("Board {} connected", id);
 
                 let details = match load_detals(&id) {
                     Ok(x) => x,
@@ -67,7 +65,7 @@ impl Actor {
 
                 self.boards.insert(id, board.clone());
 
-                _ = respond_to.send(board);
+                _ = respond_to.send((board, true));
             }
             Message::SetBoardDetails { id, details } => {
                 if let Err(err) = save_details(&id, &details) {
@@ -76,11 +74,12 @@ impl Actor {
             }
             Message::Cleanup => {
                 let mut to_remove: Vec<String> = vec![];
+
                 for (key, board) in &self.boards {
                     if board.state != BoardState::Disconnected
-                        && board.last_update - Utc::now() > TimeDelta::seconds(30)
+                        && Utc::now() - board.last_update > TimeDelta::seconds(30)
                     {
-                        to_remove.push(key.clone());
+                        to_remove.push(key.to_owned());
                     }
                 }
 
@@ -194,7 +193,7 @@ impl Actor {
 enum Message {
     GetBoard {
         id: String,
-        respond_to: oneshot::Sender<Board>,
+        respond_to: oneshot::Sender<(Board, bool)>,
     },
     SetBoardDetails {
         id: String,
@@ -281,7 +280,7 @@ impl Boards {
         _ = self.sender.send(msg).await;
     }
 
-    pub async fn get(&self, id: impl Into<String>) -> Board {
+    pub async fn get(&self, id: impl Into<String>) -> (Board, bool) {
         let (tx, rx) = oneshot::channel();
         let msg = Message::GetBoard {
             id: id.into(),

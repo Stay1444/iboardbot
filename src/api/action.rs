@@ -6,7 +6,7 @@ use axum::{
 };
 use bevy_math::Rect;
 use serde::Deserialize;
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::{
     api::services::boards::entities::JobAction,
@@ -51,7 +51,11 @@ pub async fn handle(
             If you are sending this from the docs page remember adding a Variable called boardId with your board name.");
     }
 
-    let board = boards.get(&id).await;
+    let (board, is_new) = boards.get(&id).await;
+
+    if is_new {
+        info!("Board {} connected", id);
+    }
 
     let mut message = BoardMessage::new(1);
     let mut job = tokio::select! {

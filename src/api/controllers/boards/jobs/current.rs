@@ -25,7 +25,7 @@ pub async fn action(
         return ApiResponse::bad_req("Skipping {boardId} board");
     }
 
-    let board = boards.get(id).await;
+    let (board, _) = boards.get(id).await;
 
     match board.state {
         BoardState::Working(job) => ApiResponse::ok(Some(job)),
