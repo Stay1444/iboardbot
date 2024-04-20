@@ -36,9 +36,9 @@ I'm working on an easy to use frontend so be patient for that.
 
 Here's how you can write a text or draw an svg with curl
 
-Replace **boardId** with watever you've named your board, for example `main` like so it ends up like `http://0.0.0.0/boards/main/jobs` (so remove the {} too).
+Replace **boardId** with whatever you've named your board, for example `main`; so it ends up like `http://0.0.0.0/boards/main/jobs`.
 
-Change `0.0.0.0` for the IP and port of your API.
+Change `0.0.0.0` to the IP and port of your API.
 
 ### Text
 
