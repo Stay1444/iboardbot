@@ -28,7 +28,7 @@ You can find the API docs at the `/docs` endpoint in the API.
 
 # Frontend / Easy to use app
 
-At the moment the only real way to use it is sending HTTP requests to the API, which you can find the docs on the `/docs` endpoint. 
+At the moment the only real way to use it is sending HTTP requests to the API, which you can find the docs for on the `/docs` endpoint. 
 
 I'm working on an easy to use frontend so be patient for that. 
 
