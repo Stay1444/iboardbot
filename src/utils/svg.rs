@@ -1,5 +1,6 @@
-use std::{path::PathBuf, process::Command};
+use std::{os::unix::process::ExitStatusExt, path::PathBuf, process::Command};
 
+use anyhow::anyhow;
 use bevy_math::{Rect, Vec2};
 use tracing::{debug, error};
 use uuid::Uuid;
@@ -9,7 +10,7 @@ use crate::{
     utils::software_board::{SBA, SBM},
 };
 
-pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> (Vec<BoardMessage>, Rect) {
+pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> anyhow::Result<(Vec<BoardMessage>, Rect)> {
     let mut messages = vec![];
     let mut boxes = vec![];
 
@@ -27,22 +28,22 @@ pub fn draw_group(bounds: Rect, svgs: Vec<String>) -> (Vec<BoardMessage>, Rect) 
             svgs.len()
         );
 
-        return (messages, Rect::new(0.0, 0.0, 0.0, 0.0));
+        return Err(anyhow!("Disparity between boxes and svgs"));
     }
 
     for i in 0..boxes.len() {
         let svg = svgs[i].clone();
         let rect = boxes[i];
-        let (mut res, _) = draw(rect, svg);
+        let (mut res, _) = draw(rect, svg)?;
 
         messages.append(&mut res);
     }
 
-    (messages, bounds)
+    Ok((messages, bounds))
 }
 
-pub fn draw(rect: Rect, svg: String) -> (Vec<BoardMessage>, Rect) {
-    let gcode = generate_gcode(svg);
+pub fn draw(rect: Rect, svg: String) -> anyhow::Result<(Vec<BoardMessage>, Rect)> {
+    let gcode = generate_gcode(svg)?;
 
     let mut message = SBM::new(1);
 
@@ -117,10 +118,10 @@ pub fn draw(rect: Rect, svg: String) -> (Vec<BoardMessage>, Rect) {
         last.push(BoardAction::StopDrawing);
     }
 
-    (messages, Rect::from_corners(Vec2::ZERO, message_bounds))
+    Ok((messages, Rect::from_corners(Vec2::ZERO, message_bounds)))
 }
 
-fn generate_gcode(svg: String) -> String {
+fn generate_gcode(svg: String) -> anyhow::Result<String> {
     let temp_dir: PathBuf = "temp-conversions".into();
 
     let id = Uuid::new_v4();
@@ -128,27 +129,49 @@ fn generate_gcode(svg: String) -> String {
     if !temp_dir.exists() {
         std::fs::create_dir(temp_dir.clone()).unwrap();
     }
+
     let mut svg_file = temp_dir.clone();
     svg_file.push(format!("{}.svg", id.to_string()));
 
-    std::fs::write(&svg_file, svg).unwrap();
+    std::fs::write(&svg_file, svg)?;
 
     let mut out_file = temp_dir.clone();
     out_file.push(format!("{}.gcode", id.to_string()));
 
     let mut args = vec![];
 
-    args.push(svg_file.to_str().unwrap());
+    let Some(svg_file_str) = svg_file.to_str() else {
+        return Err(anyhow!("Failed to convert path to string"));
+    };
+
+    let Some(out_file_str) = out_file.to_str() else {
+        return Err(anyhow!("Failed to convert path to string"));
+    };
+
+    args.push(svg_file_str);
     args.push("--off");
     args.push("M4");
     args.push("--on");
     args.push("M5");
     args.push("-o");
-    args.push(out_file.to_str().unwrap());
+    args.push(out_file_str);
 
-    Command::new("svg2gcode").args(&args).status().unwrap();
+    let result = match Command::new("svg2gcode").args(&args).status() {
+        Ok(x) => x,
+        Err(err) => {
+            error!("Failed to invoke svg2gcode, is it installed? {err}");
+            return Err(err.into());
+        }
+    };
 
-    let gcode = std::fs::read_to_string(out_file).unwrap();
+    if !result.success() {
+        return Err(anyhow!(
+            "svg2gcode failed with status code {}",
+            result.stopped_signal().unwrap_or_default()
+        ));
+    }
 
-    gcode
+    let gcode = std::fs::read_to_string(out_file)?;
+
+    Ok(gcode)
 }

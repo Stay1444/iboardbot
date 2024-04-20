@@ -71,7 +71,7 @@ pub async fn handle(
                 }
             };
 
-            let (messages, taken) = utils::svg::draw(
+            let Ok((messages, taken)) = utils::svg::draw(
                 Rect::new(
                     board.available.0,
                     board.available.1,
@@ -79,7 +79,9 @@ pub async fn handle(
                     board.available.3,
                 ),
                 svg,
-            );
+            ) else {
+                return vec![];
+            };
 
             boards.report_space_taken(&id, taken).await;
 
@@ -141,7 +143,7 @@ pub async fn handle(
                 svgs.push(svg);
             }
 
-            let (messages, taken) = utils::svg::draw_group(
+            let Ok((messages, taken)) = utils::svg::draw_group(
                 Rect::new(
                     board.available.0,
                     board.available.1,
@@ -149,7 +151,9 @@ pub async fn handle(
                     board.available.3,
                 ),
                 svgs,
-            );
+            ) else {
+                return vec![];
+            };
 
             boards.report_space_taken(&id, taken).await;
 

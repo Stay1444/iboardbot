@@ -41,5 +41,5 @@ pub fn render(
 
     stdout.read_to_string(&mut data)?;
 
-    Ok(svg::draw(rect, data))
+    Ok(svg::draw(rect, data)?)
 }
