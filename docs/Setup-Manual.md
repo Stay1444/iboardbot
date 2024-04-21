@@ -29,7 +29,7 @@ $ apt install -y \
 curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh
 ```
 
-# Clone and Build iboardbot API Server
+## Clone and Build iboardbot API Server
 ```sh
 $ cd ~
 $ git clone https://github.com/Stay1444/iboardbot
@@ -39,14 +39,14 @@ $ cargo build --release
 
 The binary will be in `./iboardbot/target/release/iboardbot`
 
-# Clone and Build svg2gcode - Needed for drawing svgs
+## Clone and Build svg2gcode - Needed for drawing svgs
 ```sh
 $ git clone https://github.com/sameer/svg2gcode
 $ cd svg2gcode
 $ cargo build --release
 ```
 
-# Install text2svg - Needed for writing text to the board
+## Install text2svg - Needed for writing text to the board
 ```sh
 $ gem install text2svg
 ```
