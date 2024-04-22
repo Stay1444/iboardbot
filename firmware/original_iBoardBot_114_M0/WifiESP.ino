@@ -44,13 +44,14 @@ void EEPROMput(const uint8_t *object, uint8_t asize)
 }
 
 // Write WIFI config to EEPROM
-void writeWifiConfig(uint8_t status, const char ssid[30], const char pass[30], const char proxy[30], unsigned int port)
+void writeWifiConfig(uint8_t status, const char ssid[30], const char pass[30], const char api_ip[30], unsigned int api_port, const char board_name[12])
 {
   WifiConfig.status = status;  // Status=1 -> configured
   strcpy(WifiConfig.ssid, ssid);
   strcpy(WifiConfig.pass, pass);
-  strcpy(WifiConfig.proxy, proxy);
-  WifiConfig.port = port;
+  strcpy(WifiConfig.api_ip, api_ip);
+  WifiConfig.api_port = api_port;
+  strcpy(WifiConfig.board_name, board_name);
   uint16_t EEsize = sizeof(struct WifiConfigS);  
   uint8_t *bytePtr = (uint8_t*)&WifiConfig;
   SerialUSB.println("Writing EEPROM...");
@@ -61,32 +62,22 @@ void WifiConfigurationMode()
 {
   delay(5000);
   SerialUSB.println("Wifi Configuration mode...");
-  ESPflush();
   Serial1.println("AT+RST");
-  ESPwaitFor("ready", 10);
-
-  //Serial1.println("AT+CWMODE=1");   // Station mode
-  //ESPwaitFor("OK", 3);
-  //Serial1.println("AT+CWLAP");
-  //ESPwaitFor("OK",3);
-  //Serial1.println("AT+CWLAP");
-  //ESPgetAPlist();
+  delay(1000);
 
   delay(50);
   Serial1.println("AT+CWMODE=2");   // Soft AP mode
-  ESPwaitFor("OK", 3);
-  Serial1.println("AT+CIPSTAMAC?");
-  ESPgetMac(MAC);
-  Serial1.println("AT+CWSAP=\"JJROBOTS_IBB\",\"87654321\",5,3");
-  ESPwaitFor("OK", 6);
+  delay(1000);
+  Serial1.println("AT+CWSAP=\"iBoardBot\",\"87654321\",5,3");
+  delay(1000);
   Serial1.println("AT+CIPMUX=1");
-  ESPwaitFor("OK", 3);
+  delay(1000);
   Serial1.println("AT+CIPSERVER=1,80");
-  ESPwaitFor("OK", 4);
+  delay(1000);
 
   SerialUSB.println();
   SerialUSB.println("Instructions:");
-  SerialUSB.println("->Connect to JJROBOTS_IBB wifi network, password: 87654321");
+  SerialUSB.println("->Connect to iBoardBot wifi network, password: 87654321");
   SerialUSB.println("->Open page: http://192.168.4.1");
   SerialUSB.println("->Fill SSID and PASSWORD of your Wifi network and press SEND!");
   // Show web server configuration page until user introduce the configuration
@@ -107,14 +98,12 @@ void WifiConfigurationMode()
   SerialUSB.println(WifiConfig.ssid);
   SerialUSB.print("PASS :");
   SerialUSB.println(WifiConfig.pass);
-  SerialUSB.println("HOST : ");
-  SerialUSB.println(SERVER_HOST);
-  SerialUSB.println("URL : ");
-  SerialUSB.println(SERVER_URL);
-  SerialUSB.print("PROXY : ");
-  SerialUSB.println(WifiConfig.proxy);
-  SerialUSB.print("PORT : ");
-  SerialUSB.println(WifiConfig.port);
+  SerialUSB.print("API_IP : ");
+  SerialUSB.println(WifiConfig.api_ip);
+  SerialUSB.print("API_PORT : ");
+  SerialUSB.println(WifiConfig.api_port);
+  SerialUSB.print("BOARD NAME: ");
+  SerialUSB.println(WifiConfig.board_name);
 
 
   Serial1.println("AT+CWQAP");
@@ -123,8 +112,10 @@ void WifiConfigurationMode()
   ESPwaitFor("OK", 3);
   Serial1.println("AT+RST");
   ESPwaitFor("ready", 10);
-  delay(1000);
+  delay(5000);
 }
+
+void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void GetMac()
 {
@@ -443,23 +434,23 @@ uint8_t ESPsendHTTP(char *url)
   //SerialUSB.println(freeRam());
   // Open TCP connection on port 80
   strcpy(cmd_get, "AT+CIPSTART=\"TCP\",\"");
-  if ((WifiConfig.port > 0) && (WifiConfig.port < 65000) && (strlen(WifiConfig.proxy) > 0)) { // Connection with proxy?
-    strcat(cmd_get, WifiConfig.proxy);
-    strcat(cmd_get, "\",");
-    sprintf(strPort, "%d", WifiConfig.port);
-    strcat(cmd_get, strPort);
-  }
-  else {  // Standard HTTP connection (direct to host on port 80)
-    strcat(cmd_get, SERVER_HOST);
-    strcat(cmd_get, "\",80");
-  }
+
+  strcat(cmd_get, WifiConfig.api_ip);
+  char portString[6];
+  sprintf(portString, "%d", WifiConfig.api_port);
+
+  strcat(cmd_get, "\",");
+  strcat(cmd_get, portString);
+  
   Serial1.println(cmd_get);
   if (ESPwaitFor("OK", 5))
   {
     strcpy(cmd_get, "GET ");
     strcat(cmd_get, url);
     strcat(cmd_get, " HTTP/1.1\r\nHost:");
-    strcat(cmd_get, SERVER_HOST);
+    strcat(cmd_get, WifiConfig.api_ip);
+    strcat(cmd_get, ":");
+    strcat(cmd_get, portString);
     strcat(cmd_get, "\r\nConnection: close\r\n\r\n");
     sprintf(strSize, "%d", strlen(cmd_get));
     strcpy(cmd_send, "AT+CIPSEND=");
@@ -514,6 +505,25 @@ uint8_t ESPwebServerExtractParam(char *param, char ch)
   return 0;
 }
 
+void str_replace(char *src, char *oldchars, char *newchars) { // utility string function
+  char *p = strstr(src, oldchars);
+  char buf[WIFICONFIG_MAXLEN];
+  do {
+    if (p) {
+      memset(buf, '\0', strlen(buf));
+      if (src == p) {
+        strcpy(buf, newchars);
+        strcat(buf, p + strlen(oldchars));
+      } else {
+        strncpy(buf, src, strlen(src) - strlen(p));
+        strcat(buf, newchars);
+        strcat(buf, p + strlen(oldchars));
+      }
+      memset(src, '\0', strlen(src));
+      strcpy(src, buf);
+    }
+  } while (p && (p = strstr(src, oldchars)));
+}
 
 // Mini WEB SERVER to CONFIG the WIFI parameters: SSID, passeword and optionally proxy and port
 // If the server receive an url with parameters: decode it and store on EEPROM
@@ -556,8 +566,6 @@ void ESPwebServerConfig()
           // If we found an "?" on the first line then this is the configuration page
           if (ch == '\n')
             webserver_status = 3;
-          if (ch == 'v')
-            webserver_status = 9;
           if (ch == '?') {
             user_param[0] = '\0';
             webserver_status = 4;
@@ -576,19 +584,7 @@ void ESPwebServerConfig()
           ESPflush();
           webserver_status = 0;
           break;
-        case 9:
-          // Webserver root => Show configuration page
-          SerialUSB.println();
-          SerialUSB.println("->Advanced page");
-          delay(20);
-          ESPflush();
-          ESPconfigWeb_advanced(tcp_ch);
-          delay(20);
-          ESPflush();
-          delay(50);
-          ESPflush();
-          webserver_status = 0;
-          break;
+      
         case 4:
           SerialUSB.println("->P1");
           result = ESPwebServerExtractParam(user_param, ch);
@@ -604,6 +600,7 @@ void ESPwebServerConfig()
           SerialUSB.println("->P2");
           result = ESPwebServerExtractParam(user_param, ch);
           if (result == 1) { // Ok => extraemos siguiente parametro
+            char repl_buffer[WIFICONFIG_MAXLEN];
             urldecode2(WifiConfig.pass, user_param);
             user_param[0] = '\0';
             webserver_status = 6;
@@ -615,8 +612,8 @@ void ESPwebServerConfig()
           SerialUSB.println("->P3");
           result = ESPwebServerExtractParam(user_param, ch);
           if (result == 1) { // Ok => extraemos siguiente parametro
-            urldecode2(WifiConfig.proxy, user_param);
-            SerialUSB.print("->proxy=");
+            urldecode2(WifiConfig.api_ip, user_param);
+            SerialUSB.print("->api_ip=");
             SerialUSB.println(user_param);
             user_param[0] = '\0';
             webserver_status = 7;
@@ -629,19 +626,32 @@ void ESPwebServerConfig()
           result = ESPwebServerExtractParam(user_param, ch);
           if (result == 1) { // Ok => extraemos siguiente parametro
             if (strlen(user_param) > 0)
-              WifiConfig.port = atoi(user_param);
+              WifiConfig.api_port = atoi(user_param);
             else
-              WifiConfig.port = 0;
+              WifiConfig.api_port = 0;
             //urldecode2(WifiConfig.pass, user_param);
-            SerialUSB.print("->port=");
+            SerialUSB.print("->api_port=");
             SerialUSB.println(user_param);
             user_param[0] = '\0';
-            webserver_status = 8;
+            webserver_status =8;
           }
           if (result == 2) // Error => Show config page again...
             webserver_status = 3;
           break;
         case 8:
+          SerialUSB.println("->P5");
+          result = ESPwebServerExtractParam(user_param, ch);
+          if (result == 1) { // Ok => extraemos siguiente parametro
+            urldecode2(WifiConfig.board_name, user_param);
+            SerialUSB.print("->board_name=");
+            SerialUSB.println(user_param);
+            user_param[0] = '\0';
+            webserver_status = 10;
+          }
+          if (result == 2) // Error => Show config page again...
+            webserver_status = 3;
+          break;
+        case 10:
           ESPflush();
           delay(50);
           ESPflush();
@@ -693,98 +703,138 @@ void urldecode2(char *dst, const char *src)
   *dst++ = '\0';
 }
 
+const char* configHttpResponseBody =
+    "<!DOCTYPE HTML>\n"
+    "<html>\n"
+    "<head>\n"
+    "  <title>IBoardBot - Configuration</title>\n"
+    "  <meta name='viewport' content='width=device-width'>\n"
+    "  <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap' rel='stylesheet'>\n"
+    "  <style>\n"
+    "  .arimo { font-family: 'Arimo', sans-serif; font-optical-sizing: auto; font-weight: regular; font-style: normal; }\n"
+    "  body { background: #3A4F97; width: 100%; height: 100%; position: absolute; display: flex; justify-content: center; align-items: center; flex-direction: column; }\n"
+    "  .container { background: #18191B; padding: 25px; border-radius: 15px; color: white; box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px; }\n"
+    "  input { border-radius: 10px; padding: 10px; font-size: 16px; }\n"
+    "  p { font-size: 10px; margin: 4px; color: #B0B4BA; }\n"
+    "  </style>\n"
+    "</head>\n"
+    "<body class='arimo'>\n"
+    "  <div class='container'>\n"
+    "  <h1>Configuration Page</h3>\n"
+    "  <form method='get' action='config'>\n"
+    "    <h3>WiFi</h3>\n"
+    "    <label>SSID:</label><br>\n"
+    "    <p>Network must support 2.4Ghz</p>\n"
+    "    <input type='text' name='ssid' size='30'><br>\n"
+    "    <label>Password:</label><br>\n"
+    "    <input type='password' name='password' size='30'><br>\n"
+    "    <h3>API</h3>\n"
+    "    <label>Host:</label><br>\n"
+    "    <p>Only domain / IP address. Do not include protocol</p>\n"
+    "    <input type='text' value='10.0.0.1' name='api_ip' placeholder='Domain or IP Address' size='30'><br>\n"
+    "    <label>Port:</label><br>\n"
+    "    <input type='text' name='api_port' placeholder='80' value='80' size='30'><br>\n"
+    "    <label>Board Name:</label><br>\n"
+    "    <input type='text' name='board_name' placeholder='main' value='main' size='8'><br>\n"
+    "    <br><br>\n"
+    "    <input type='submit' value='Apply'>\n"
+    "  </form>\n"
+    "  </div>\n"
+    "</body>\n"
+    "</html>";
+
+
+int configHttpResponseBodyLength = strlen(configHttpResponseBody);
+
+const char* httpHeaders = "HTTP/1.1 200 OK\r\n"
+                           "Content-Type: text/html\r\n"
+                           "Connection: close\r\n"
+                           "Content-Length: ";
+
+int httpHeadersLength = strlen(httpHeaders);
+
 // HTML Page to Config Wifi parameters: SSID, password and optional: proxy and port
 // We use html static pages with precalculated sizes (memory optimization)
 void ESPconfigWeb(uint8_t tcp_ch)
 {
   Serial1.print("AT+CIPSEND=");
   Serial1.print(tcp_ch);
-  Serial1.println(",573");   // Header length: 84 Content length: 489 = 573
-  ESPwaitFor(">", 3);
-  Serial1.println("HTTP/1.1 200 OK"); //15+2
-  Serial1.println("Content-Type: text/html"); //23+2
-  Serial1.println("Connection: close"); //17+2
-  Serial1.println("Content-Length: 489"); //19+2
-  Serial1.println();  //2  => total: 17+25+19+21+2 = 84
-  delay(10);
-  Serial1.print("<!DOCTYPE HTML><html><head><meta name='viewport' content='width=device-width'>"); //78
-  Serial1.print("<body><h3>Wifi Configuration Page</h3><form method='get' action='config'>"); //73
-  Serial1.print("<label>SSID:</label><br><input type='text' name='ssid' size='30'><br>"); //69
-  Serial1.print("<label>Password:</label><br><input type='password' name='password' size='30'><br>"); //81
-  Serial1.print("<br><a href='av'>advanced</a><input hidden type='text' name='proxy' value=''><input hidden type='text' name='port' value=''>"); //124
-  Serial1.print("<br><br><input type='submit' value='SEND!'></form></body></html>"); //60
-  // Total=78+73+69+81+124+64= 489
-  ESPwaitFor("OK", 5);
-  delay(100);
-  // Close the connection from server side (safety)
-  //SerialUSB.println("->CIPCLOSE");
-  Serial1.print("AT+CIPCLOSE=");
-  Serial1.println(tcp_ch);
-  
-}
+  Serial1.print(",");
+  char contentLengthString[6];
+  sprintf(contentLengthString, "%d", configHttpResponseBodyLength);
 
-// HTML Page to Config Wifi parameters: SSID, password and optional: proxy and port
-// We use html static pages with precalculated sizes (memory optimization)
-void ESPconfigWeb_advanced(uint8_t tcp_ch)
-{
+  Serial1.println(httpHeadersLength + strlen(contentLengthString) + 2); // 2 bytes for \r\n
+  ESPwaitFor(">", 3);
+
+  Serial1.print(httpHeaders);
+  Serial1.println(contentLengthString);
+  delay(100);
+  ESPwaitFor("OK", 5);
+
   Serial1.print("AT+CIPSEND=");
   Serial1.print(tcp_ch);
-  Serial1.println(",573");   // Header length: 84 Content length: 489 = 573
-  ESPwaitFor(">", 3);
-  Serial1.println("HTTP/1.1 200 OK"); //15+2
-  Serial1.println("Content-Type: text/html"); //23+2
-  Serial1.println("Connection: close"); //17+2
-  Serial1.println("Content-Length: 489"); //19+2
-  Serial1.println();  //2  => total: 17+25+19+21+2 = 84
-  delay(10);
-  Serial1.print("<!DOCTYPE HTML><html><head><meta name='viewport' content='width=device-width'>"); //78
-  Serial1.print("<body><h3>Wifi Configuration Page</h3><form method='get' action='config'>"); //73
-  Serial1.print("<label>SSID:</label><br><input type='text' name='ssid' size='30'><br>"); //69
-  Serial1.print("<label>Password:</label><br><input type='password' name='password' size='30'><br>"); //81
-  Serial1.print("<i><h5>OPTIONAL:</h5>Proxy:<input type='text' name='proxy' size='20'>&nbsp;port:<input type='text' name='port' size='6'></i>"); //124
-  Serial1.print("<br><br><input type='submit' value='SEND!'></form></body></html>"); //60
-  // Total=78+73+69+81+124+64= 489
+  Serial1.print(",");
+  Serial1.println(configHttpResponseBodyLength+2);
+  ESPwaitFor(">", 3);  
+  Serial1.println();
+  Serial1.print(configHttpResponseBody);
+  delay(100);
   ESPwaitFor("OK", 5);
   delay(100);
-  // Close the connection from server side (safety)
-  //SerialUSB.println("->CIPCLOSE");
   Serial1.print("AT+CIPCLOSE=");
   Serial1.println(tcp_ch);
-  
 }
 
+const char* configOkHttpResponseBody =
+    "<!DOCTYPE HTML>\n"
+    "<html>\n"
+    "<head>\n"
+    "  <title>IBoardBot - Done</title>\n"
+    "  <meta name='viewport' content='width=device-width'>\n"
+    "  <link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&display=swap' rel='stylesheet'>\n"
+    "  <style>\n"
+    "  .arimo { font-family: 'Arimo', sans-serif; font-optical-sizing: auto; font-weight: regular; font-style: normal; }\n"
+    "  body { background: #3A4F97; width: 100%; height: 100%; position: absolute; display: flex; justify-content: center; align-items: center; flex-direction: column; }\n"
+    "  .container { background: #18191B; padding: 25px; border-radius: 15px; color: white; box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px; }\n"
+    "  </style>\n"
+    "</head>\n"
+    "<body class='arimo'>\n"
+    "  <div class='container'>\n"
+    "  <h1>Done</h3>\n"
+    "  <p>Configuration completed. Please reset the board using the reset button or disconnecting the power for a couple of seconds.</p>\n"
+    "  </div>\n"
+    "</body>\n"
+    "</html>";
 
-// HTML page showing that Wifi is configured OK
-// This page has a button to continue the wizard
+
+int configOkHttpResponseBodyLength = strlen(configOkHttpResponseBody);
+
 void ESPconfigWebOK(uint8_t tcp_ch)
 {
   Serial1.print("AT+CIPSEND=");
   Serial1.print(tcp_ch);
-  Serial1.println(",388");   // Header length: 84 Content length: 304 = 388
+  Serial1.print(",");
+  char contentLengthString[6];
+  sprintf(contentLengthString, "%d", configOkHttpResponseBodyLength);
+
+  Serial1.println(httpHeadersLength + strlen(contentLengthString) + 2); // 2 bytes for \r\n
   ESPwaitFor(">", 3);
-  Serial1.println("HTTP/1.1 200 OK"); //15+2
-  Serial1.println("Content-Type: text/html"); //23+2
-  Serial1.println("Connection: close"); //17+2
-  Serial1.println("Content-Length: 304"); //19+2
-  Serial1.println();  //2  => total: 17+25+19+21+2 = 84
-  delay(10);
 
-  Serial1.print("<!DOCTYPE HTML><html><head><meta name='viewport' content='width=device-width, user-scalable=no'>"); //96
-  Serial1.print("<body><h3>ID:&nbsp"); //18
-  Serial1.print(MAC); //12
-  //Serial1.print("</h3><h2>Wifi Configured!</h2><button onclick=\"location.href='http:\/\/ibbapp.jjrobots.com/wizard/wizard2.php?ID_IWBB="); //112
-  Serial1.print("</h3><h2>Wifi Configured!</h2><button onclick=\"location.href='http://ibbapp.jjrobots.com/wizard/wizard2.php?ID_IWBB="); //112
-  Serial1.print(MAC); //12
-  Serial1.print("';\">Go to Test and Registration</button></body></html>"); //54
-  // total = 96+18+12+112+12+54 = 304
-
-  //SerialUSB.println("->Wait OK");
-  ESPwaitFor("OK", 5);
-  //SerialUSB.println("->OK");
+  Serial1.print(httpHeaders);
+  Serial1.println(contentLengthString);
   delay(100);
-  // Close the connection from server side (safety)
-  SerialUSB.println("->CIPCLOSE");
+  ESPwaitFor("OK", 5);
+
+  Serial1.print("AT+CIPSEND=");
+  Serial1.print(tcp_ch);
+  Serial1.print(",");
+  Serial1.println(configOkHttpResponseBodyLength+2);
+  ESPwaitFor(">", 3);  
+  Serial1.println();
+  Serial1.print(configOkHttpResponseBody);
+  delay(100);
+  ESPwaitFor("OK", 5);
+  delay(100);
   Serial1.print("AT+CIPCLOSE=");
   Serial1.println(tcp_ch);
-  
 }

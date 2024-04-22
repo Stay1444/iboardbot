@@ -1,8 +1,5 @@
 // iBoardBot project
 #include <stdint.h>
-
-#define SERVER_HOST "ibb.muevetef"
-#define SERVER_URL "http://ibb.muevetef/_/board/main"
  
 #define MAX_PACKET_SIZE 768
 
@@ -82,7 +79,7 @@
 
 #define MINIMUN_SPEED 25000 // Fo timer counter 
 
-#define WIFICONFIG_MAXLEN 30
+#define WIFICONFIG_MAXLEN 42
 
 // Variable definitions
 // Wifi status
@@ -160,8 +157,9 @@ struct WifiConfigS{
   uint8_t status;
   char ssid[WIFICONFIG_MAXLEN];
   char pass[WIFICONFIG_MAXLEN];
-  char proxy[WIFICONFIG_MAXLEN];
-  unsigned int port;
+  char api_ip[WIFICONFIG_MAXLEN];
+  uint16_t api_port;
+  char board_name[12];
 };
 
 WifiConfigS WifiConfig;
