@@ -30,7 +30,7 @@ Open the library browser in the Arduino IDE and download the library called `Fla
 
 ## Flashing & Configuring
 
-Connect your board and press the `Upload` button. Once it's uploaded it should print something to the serial (baud rate of 11520) this:
+Connect your board and press the `Upload` button. Once it's uploaded it should print to the serial this, at a baud rate of 115200.
 
 ```
 Wifi Configuration mode...
