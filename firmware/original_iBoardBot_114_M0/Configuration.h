@@ -1,8 +1,5 @@
 // iBoardBot project
 #include <stdint.h>
-
-#define SERVER_HOST "ibb.jjrobots.com"
-#define SERVER_URL "http://ibb.jjrobots.com/ibbsvr/ibb.php"
  
 #define MAX_PACKET_SIZE 768
 
@@ -32,7 +29,7 @@
 #define SERVO_MIN_PULSEWIDTH 900
 #define SERVO_MAX_PULSEWIDTH 2100
 // Servo values por NoPaint, Paint and Erase servo positions...
-#define SERVO1_PAINT 1800
+#define SERVO1_PAINT 2000
 #define SERVO1_ERASER 1080
 #define SERVO2_LIFT 1290 //1300
 #define SERVO2_PAINT 1660 //1650
@@ -82,7 +79,7 @@
 
 #define MINIMUN_SPEED 25000 // Fo timer counter 
 
-#define WIFICONFIG_MAXLEN 30
+#define WIFICONFIG_MAXLEN 42
 
 // Variable definitions
 // Wifi status
@@ -160,8 +157,9 @@ struct WifiConfigS{
   uint8_t status;
   char ssid[WIFICONFIG_MAXLEN];
   char pass[WIFICONFIG_MAXLEN];
-  char proxy[WIFICONFIG_MAXLEN];
-  unsigned int port;
+  char api_ip[WIFICONFIG_MAXLEN];
+  uint16_t api_port;
+  char board_name[12];
 };
 
 WifiConfigS WifiConfig;
