@@ -28,9 +28,9 @@ You can find the API docs at the `/docs` endpoint in the API.
 
 # Frontend / Easy to use app
 
-At the moment the only real way to use it is sending HTTP requests to the API, which you can find the docs for on the `/docs` endpoint. 
+At the moment the only real way to use it is sending HTTP requests to the API, which you can find the docs for on the `/docs` endpoint.
 
-I'm working on an easy to use frontend so be patient for that. 
+I'm working on an easy to use frontend so be patient for that.
 
 ## Quick CURL Example
 
@@ -60,7 +60,7 @@ $ curl -X POST \
 
 ### Erase
 
-The board will remember what parts are occupied so you'll need to send an *erase* command so it can draw everywhere again. Note that this doesn't actually use the eraser to erase the board, you'll need to erase the board with your human hands for now.
+The board will remember what parts are occupied so you'll need to send an _erase_ command so it can draw everywhere again. Note that this doesn't actually use the eraser to erase the board, you'll need to erase the board with your human hands for now.
 
 ```sh
 $ curl -X POST \
@@ -68,3 +68,4 @@ $ curl -X POST \
   -d 'Erase' \
   http://0.0.0.0/boards/{boardId}/jobs
 ```
+

@@ -1,23 +1,45 @@
-# Reflashing Arduino - Changing the API domain
+# Reflashing Arduino
 
-Since the original Arduino code points to the now offline jjrobots API, we'll need to change the Arduino code so it points to your instance of this API. This is fairly trivial.
+We need to flash the [newer firmware](../firmware/iBoardBot_114_M0/) since the original one has a non functional configuration web panel and has their API url hardcoded.
 
-Simply open the Configuration.h file and find the following lines
+## Requisites
 
-```c
-#define SERVER_HOST "0.0.0.0"
-#define SERVER_URL "http://0.0.0.0:8080/_/board/main"
-```
-| Note: I have not tested hosting the API on another port that was not `80`
+- [Arduino IDE v2](https://docs.arduino.cc/software/ide-v2/tutorials/getting-started/ide-v2-downloading-and-installing/)
 
-Note that instead of using 0.0.0.0 you'll need to put the actual ip of the server / computer where you are hosting the API.
+## Cloning the repository
 
-If you want to connect multiple boards, the "main" is the board name, so you can change that to represent different boards, eg:
+First step is to clone this git repository
 
-```c
-#define SERVER_URL "http://0.0.0.0:8080/_/board/other-board-1"
-#define SERVER_URL "http://0.0.0.0:8080/_/board/my-board"
-// etc
+```sh
+$ git clone https://github.com/Stay1444/iboardbot
 ```
 
-The first time that the board connects to the API, the API will create a configuration file for that board under `./boards/main.yaml` (or whatever you called your board). There you can set the board dimensions. You can then check if those dimensions are alright by queue-ing the Calibrate job, which will draw a rectangle based on the specified board bounds.
+## Opening the Arduino sketch
+
+Open the file `/firmware/iBoardBot_114_M0/iBoardBot_114_M0.ino` with the Arduino IDE.
+
+## Selecting the board
+
+On the board selector, if not detected automatically, you need to select the Arduino Zero. This firmware is for the Arduino Zero variant of the iBoardBot, if you have the older Arduino Leonardo version you are out of luck.
+
+## Installing the libraries
+
+Open the library browser in the Arduino IDE and download the library called `FlashStorage`.
+
+![arduino ide library browser](../images/arduino-ide-flashstorage.png)
+
+## Flashing & Configuring
+
+Connect your board and press the `Upload` button. Once it's upload it should print something to the serial (baud rate of 11520) like this:
+
+```
+Wifi Configuration mode...
+
+Instructions:
+->Connect to iBoardBot wifi network, password: 87654321
+->Open page: http://192.168.4.1
+->Fill SSID and PASSWORD of your Wifi network and press SEND!
+```
+
+Use a laptop or phone to connect to the WiFi Network called `iBoardBot`, then browse to `http://192.168.4.1` and configure the board as you want.
+
