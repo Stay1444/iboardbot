@@ -15,6 +15,10 @@ pub fn load(preference: Option<String>) -> anyhow::Result<PathBuf> {
 
     let font_dir: PathBuf = FONTS_DIR.into();
 
+    if !font_dir.exists() {
+        std::fs::create_dir(&font_dir)?;
+    }
+
     // Load any font file present in the fonts folder
     for file in font_dir.read_dir()? {
         let file = file?;

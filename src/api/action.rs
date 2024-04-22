@@ -6,7 +6,7 @@ use axum::{
 };
 use bevy_math::Rect;
 use serde::Deserialize;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use crate::{
     api::services::boards::entities::JobAction,
@@ -100,7 +100,7 @@ pub async fn handle(
             }
         }
         JobAction::WriteText(data) => {
-            let Ok((messages, taken)) = utils::text::renderer::render(
+            let (messages, taken) = match utils::text::renderer::render(
                 Rect::new(
                     board.available.0,
                     board.available.1,
@@ -109,10 +109,13 @@ pub async fn handle(
                 ),
                 data.text.clone(),
                 data.font.clone(),
-            ) else {
-                return vec![];
+            ) {
+                Ok(x) => x,
+                Err(err) => {
+                    error!("Error rendering text: {err}");
+                    return vec![];
+                }
             };
-
             boards.report_space_taken(&id, taken).await;
 
             for msg in messages {

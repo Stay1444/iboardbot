@@ -53,14 +53,14 @@ impl SBM {
         let mut messages = vec![];
 
         while !self.actions.is_empty() {
-            let mut msg = BoardMessage::new(self.id + messages.len() as u8);
+            let mut msg = BoardMessage::new((self.id as usize + messages.len() % 250) as u8);
 
             if pen_down {
                 msg.push(BoardAction::PenDown);
                 pen_down = false;
             }
 
-            while msg.len() < 200 && !self.actions.is_empty() {
+            while msg.len() < 250 && !self.actions.is_empty() {
                 let action = self.actions.remove(0);
 
                 if matches!(action, SBA::PenDown) {
