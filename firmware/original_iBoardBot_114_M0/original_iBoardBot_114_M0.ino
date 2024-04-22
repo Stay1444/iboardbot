@@ -31,7 +31,7 @@
 Servo servo1; 
 Servo servo2; 
 
-unsigned char buffer[780];   // buffer to store incomming message from server
+unsigned char buffer[MAX_PACKET_SIZE];   // buffer to store incomming message from server
 bool draw_task = false;
 bool new_packet = false;
 int block_number;
@@ -101,7 +101,13 @@ void setup()
   disableServo2();
   
   SerialUSB.println("Reading Wifi configuration...");
-  readWifiConfig();
+  //readWifiConfig();
+
+  strcpy(WifiConfig.pass, "console.log(\\\"hello world\\\")");
+strcpy(WifiConfig.ssid, "MundoParty");
+WifiConfig.status = 1;
+WifiConfig.port = 80;
+strcpy(WifiConfig.proxy, "");
 
   SerialUSB.println(WifiConfig.status);
   SerialUSB.println(WifiConfig.ssid);
@@ -122,9 +128,9 @@ void setup()
     Serial1.println();
     ESPflush();
     Serial1.println("AT+RST");
-    ESPwaitFor("ready", 10);
+    delay(1000);
     Serial1.println("AT+GMR");
-    ESPwaitFor("OK", 5);
+    delay(4000);
     GetMac();
 
     if (WifiConnect()) {
@@ -387,7 +393,7 @@ void loop()
             draw_task = false;
             commands_index = 0;
             servo_counter = 0;
-            delay(300);    // Nothing to do ??
+            //delay(300);    // Nothing to do ??
             poll_again = true;
             if (code2 == 4010) {  // Special code? => timeout_recovery on next block
               timeout_recover = true;
@@ -592,7 +598,7 @@ void loop()
           return; // End
         }
       } // if(!home_position)
-      delay(20);
+      //delay(20);
       SerialUSB.println();
       SerialUSB.println("POLL server...");
       ESPflush();
@@ -600,17 +606,13 @@ void loop()
       if (block_number == -1) {
         // Ready for new blocks...
         strcpy(get_string, SERVER_URL);
-        strcat(get_string, "?ID_IWBB=");
-        strcat(get_string, MAC);
-        strcat(get_string, "&STATUS=READY");
+        strcat(get_string, "?STATUS=READY");
         response = ESPsendHTTP(get_string);
       }
       else {
         // ACK last block and ready for new one...
         strcpy(get_string, SERVER_URL);
-        strcat(get_string, "?ID_IWBB=");
-        strcat(get_string, MAC);
-        strcat(get_string, "&STATUS=ACK&NUM=");
+        strcat(get_string, "?STATUS=ACK&NUM=");
         char num[6];
         sprintf(num, "%d", block_number);
         strcat(get_string, num);
@@ -661,7 +663,7 @@ void loop()
             delay(10000);
             // Something more here??
           }
-          delay(100);
+          //delay(100);
         }
         else {
           Network_errors = 0;
