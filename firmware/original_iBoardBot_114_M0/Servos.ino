@@ -9,8 +9,8 @@ void initServo()
 {
   int temp;
    
-  servo1.attach(3);
-  servo2.attach(4);
+  servo1.attach(9);
+  servo2.attach(10);
   servo1_ready=true;
   servo2_ready=true;
 }
@@ -30,13 +30,13 @@ void disableServo2()
 void enableServo1()
 {
   servo1_ready=true;
-  servo1.attach(3);
+  servo1.attach(9);
 }
 
 void enableServo2()
 {
   servo2_ready=true;
-  servo2.attach(4);
+  servo2.attach(10);
 }
 
 

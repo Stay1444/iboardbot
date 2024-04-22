@@ -431,6 +431,9 @@ uint8_t ESPwaitforMessage(uint8_t timeout_secs)
 // it uses the configuration stored on WifiConfig global variable
 uint8_t ESPsendHTTP(char *url)
 {
+  SerialUSB.print("Sending http request to ");
+  SerialUSB.println(url);
+  
   char cmd_get[160];
   char cmd_send[15];
   char strSize[6];
