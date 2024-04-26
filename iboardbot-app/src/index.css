@@ -73,9 +73,16 @@ input[type="text"] {
   background-color: white !important;
   width: 150px;
   color: #2661AC !important;
-  font-weight: 800;
+  font-weight: 500;
 
 }
+input[type="text"]::placeholder{
+  color: rgba(128, 128, 128, 0.37);
+}
+input[type="text"]::focus{
+  background: #fff;
+}
+
 
 /* FORM GENERAL Y TRANSICIÓN */
 form {
@@ -114,7 +121,7 @@ form {
 }
 
 #inicio {
-  background: url(./images/Inicio.jpg)no-repeat center/cover;
+  background: url(./images/inicio.svg)no-repeat center/cover;
   position: absolute;
   top: 0;
   height: 100%;
@@ -164,7 +171,7 @@ form {
 #container-form {
   height: 100%;
   width: 105%;
-  background: url(./images/App.jpg)no-repeat center center/cover;
+  background: url(./images/app.svg)no-repeat center center/cover;
   color: #222;
   font-weight: 600;
 

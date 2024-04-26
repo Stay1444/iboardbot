@@ -2,7 +2,7 @@ import { useContext, useState, createContext } from "react";
 import { motion } from "framer-motion";
 
 const ExitoContext = createContext();
-// eslint-disable-next-line react/prop-types
+
 function ExitoProvider({ children }) {
   const [exito, setExito] = useState(false);
   return (
@@ -11,6 +11,7 @@ function ExitoProvider({ children }) {
     </ExitoContext.Provider>
   );
 }
+
 
 function Form() {
   const [exito, setExito] = useContext(ExitoContext);
@@ -28,11 +29,11 @@ function Form() {
   };
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (formData.text === "39785") {
+    if (formData.text === "12345") {
       setExito(true);
       setError(null);
     } else {
-      setError("Codigo incorrecto piltrafilla!😈");
+      setError("Error Code");
     }
   };
   return (
@@ -42,12 +43,11 @@ function Form() {
     >
       <form action="POST" onSubmit={handleSubmit}>
         <label htmlFor="input-text" id="code">
-          Código
+          Code
         </label>
         <div>
           <input
             type="text"
-            placeholder="SECRET CODE"
             id="input-text"
             name="text"
             value={formData.text}
@@ -77,7 +77,7 @@ function Form() {
           }
           className="btn delete"
         >
-          Borrar
+          Reset
         </button>
 
         {error && <span style={{ color: "red" }}>{error} </span>}
@@ -87,6 +87,13 @@ function Form() {
 }
 function SvgForm() {
   const [error, setError] = useState(null);
+  const [sent, SetSent]= useState(null)
+  const [name, setName] = useState("select a file.")
+  
+  const changeInput= (event) =>{
+    const nameFile = event.target.files[0].name
+    setName(nameFile)
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -94,43 +101,45 @@ function SvgForm() {
     const file = event.target.fileInput.files[0];
     formData.append("svg", file);
     if (file && file.type === "image/svg+xml") {
-      console.log("archivo SVG!", file);
+     
 
       try {
         const response = await fetch(
           "http://ibb.muevetef/api/boards/jobs/main/file",
           {
             method: "POST",
-
             body: formData,
           }
         );
 
         if (response.ok) {
-          // Manejar la respuesta exitosa aquí
-          console.log("Enviado con éxito, Dibujando");
+          SetSent("Success, Drawing...")
         } else {
-          // Manejar errores de la solicitud
-          console.error("Error al enviar el formulario");
-          setError("Error de solicitud");
+         
+          console.error("Request Error");
+          setError("Request error");
         }
       } catch (error) {
-        // Manejar errores de red u otros errores
+       
         console.error("Error:", error);
-        setError("Error de red u otro");
+        setError("Network Error or Other");
       }
     } else {
-      setError("Por favor, seleccione un archivo SVG.");
+      setError("Please select an SVG file.");
     }
   };
   return (
     <form onSubmit={handleSubmit}>
       <div className="input-div">
+        
         <input
+          onChange={changeInput}
           type="file"
           name="fileInput"
+          id="fileInput"
           accept="image/svg+xml"
           className="input-svg"
+          required
         />
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -150,23 +159,27 @@ function SvgForm() {
           <polyline points="16 16 12 12 8 16"></polyline>
         </svg>
       </div>
-
+      <label htmlFor="fileInput" >SVG File: </label>
+      {name && <span style={{fontSize: 12, color: "black" }}>{name} </span>}
       <button type="submit" className="btn input-submit">
-        Enviar
+        Draw
       </button>
       {error && <span style={{ color: "red" }}>{error} </span>}
+      {sent && <span style={{ color: "green" }}>{sent} </span>}
     </form>
   );
 }
 function TextForm() {
   const [error, setError] = useState(null);
+  const [sent, setSent]= useState(null)
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const text = event.target.inputText.value;
     if (text === "") {
-      setError("No hay nada que enviar");
+      setError("Error, there is nothing to send");
     } else {
-      console.log("hay texto", text);
+      
       try {
         const response = await fetch(
           "http://ibb.muevetef/api/boards/jobs/main",
@@ -180,24 +193,25 @@ function TextForm() {
         );
 
         if (response.ok) {
-          // Manejar la respuesta exitosa aquí
-          console.log("Enviado con éxito, Dibujando");
+       
+          setSent("Success, Drawing...");
         } else {
-          // Manejar errores de la solicitud
+          
           console.error("Error al enviar el formulario");
-          setError("Error de solicitud");
+          setError("Request error");
         }
       } catch (error) {
-        // Manejar errores de red u otros errores
-        console.error("Error de red u otro", error);
-        setError("Error, vuelve a intentarlo");
+       
+        console.error(error);
+        setError("Network Error or Other");
       }
     }
   };
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="inputText">Escribe una palabra:</label>
+      <label htmlFor="inputText">Or Write:</label>
       <input
+       required
         type="text"
         name="inputText"
         id="inputText"
@@ -205,11 +219,14 @@ function TextForm() {
           border: "1px solid transparent",
           borderColor: error ? "red" : "transparent",
         }}
+        placeholder="Hello, 15, world34..."
       />
       <button type="submit" className="btn input-submit">
-        Pintar
+        Draw
       </button>
       {error && <span style={{ color: "red" }}>{error} </span>}
+      {sent && <span style={{ color: "green" }}>{sent} </span>}
+
     </form>
   );
 }
@@ -217,7 +234,7 @@ function FormTwo() {
   const [exito, setExito] = useContext(ExitoContext);
   const handleBack = () => {
     setExito(false);
-    console.log(exito);
+   
   };
 
   return (
