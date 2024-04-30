@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Roboto&display=swap');
 
 :root {
-  font-family: Roboto, sans-serif;
+  font-family:  Helvetica, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -15,30 +15,32 @@
 
 
 body {
-  overflow: hidden;
-  height: 100vh;
   padding: 0;
   margin: 0;
 }
 
 
 header {
-  height: 20dvh;
-  place-content: center;
-  text-align: center;
-  background: transparent;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  margin-bottom: 30px;
+  margin-top: 30px;
+  position: absolute;
+  top: 0;
+
 }
 
 main {
   position: absolute;
   width: 100%;
-  height: 80vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow: hidden;
-
-
+  justify-content: center;
 }
 
 /* BOTONES GENERAL */
@@ -57,18 +59,19 @@ button:hover {
 
 button[type="submit"] {
   color: #2661AC;
-  background-color: #cfe1f8;
+  background-color: #ffffff;
   border: 2px solid #2661AC;
-  height: 30px;
-  width: 70px;
+  height: 40px;
+  width: 90px;
   border-radius: 15px;
   margin: 2px;
+  font-size: medium;
 }
 
 input[type="text"] {
   height: 30px;
   border-radius: 15px;
-  border: #2661AC 2px solid !important;
+  border: #2661AC  2px solid !important;
   text-align: center;
   background-color: white !important;
   width: 150px;
@@ -76,10 +79,12 @@ input[type="text"] {
   font-weight: 500;
 
 }
-input[type="text"]::placeholder{
+
+input[type="text"]::placeholder {
   color: rgba(128, 128, 128, 0.37);
 }
-input[type="text"]::focus{
+
+input[type="text"]::focus {
   background: #fff;
 }
 
@@ -92,11 +97,12 @@ form {
   justify-content: center;
   align-items: center;
   gap: 5px;
-  max-width: 200px;
+  max-width: 500px;
   margin: auto;
 
-  margin-bottom: 20px;
 }
+
+/* TRANSICION */
 
 .form.hide {
   transform: translateX(180%);
@@ -121,11 +127,20 @@ form {
 }
 
 #inicio {
-  background: url(./images/inicio.svg)no-repeat center/cover;
+  background: url(./images/app.svg)no-repeat center/cover;
   position: absolute;
-  top: 0;
+  top: 0px;
   height: 100%;
-  width: 105%;
+  width: 100%;
+  display: flex;
+  place-content: center;
+  flex-direction: column;
+  align-items: center;
+
+  form {
+    margin: 0;
+  }
+
 
   div {
     display: flex;
@@ -135,7 +150,7 @@ form {
 
   .input-submit {
     color: #2661AC;
-    background-color: #cfe1f8;
+    background-color: #ffffff;
     border: 2px solid #2661AC;
     height: 40px;
     width: 40px;
@@ -152,17 +167,19 @@ form {
     color: #ffe4e6;
     background-color: #E24D57;
     border: 2px solid rgb(255, 233, 233);
-    height: 30px;
-    width: 70px;
+    height: 40px;
+    width: 90px;
     border-radius: 15px;
     margin: 2px;
+    font-size: medium;
   }
 
   #code {
-    font-family: "Luckiest Guy", cursive;
-    font-size: 45px;
-    color: #C94A65;
-    text-shadow: #ff656f -2px -1px 0;
+    font-family: "Luckiest Guy", cursive,sans-serif;
+    font-size: 60px;
+    color: #E24D57;
+    text-shadow: #ffffff -5px 0px 0;
+    -webkit-text-stroke: 1px #ffffff;
   }
 }
 
@@ -171,9 +188,46 @@ form {
 #container-form {
   height: 100%;
   width: 105%;
-  background: url(./images/app.svg)no-repeat center center/cover;
+  background: url(./images/inicio.svg)no-repeat center center/cover;
   color: #222;
   font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  place-content: center;
+
+  .contend {
+    display: flex;
+    margin: 20px;
+    flex-direction: column;
+    gap: 10px;
+
+    form {
+      height: 200px;
+      width: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-color: #ff4848ef;
+      padding: 20px;
+      border-radius: 30px;
+      border: #c5323ce3 2px solid;
+      box-shadow: #E24D57 5px 5px 20px;
+
+
+      label {
+        color: #ffffff;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        font-size: 18px;
+      }
+
+      span {
+        font-size: 13px;
+        color: #fff;
+      }
+    }
+  }
+
+ 
 
 }
 
@@ -207,7 +261,12 @@ form {
   justify-content: center;
   align-items: center;
   margin-top: 20px;
-  animation: flicker 2s linear infinite;
+  background-color: #fff;
+
+}
+
+.input-div:hover {
+  transform: scale(1.1);
 }
 
 .icon {
@@ -223,4 +282,189 @@ form {
   width: 100%;
   height: 100%;
   cursor: pointer;
+}
+
+/* MOVIL ANCHO */
+
+@media (max-width: 767px) and (orientation: landscape) {
+  #inicio {
+    background-position: top;
+  }
+
+  header {
+    margin-top: 10px;
+  }
+
+  #container-form {
+    width: 100%;
+    background-position: top;
+
+    header {
+      margin-bottom: 0;
+    }
+
+    .contend {
+      display: flex;
+      flex-direction: row;
+      height: 80%;
+      width: 100%;
+      place-items: center;
+      gap: 2rem;
+      justify-content: center;
+      margin: 0;
+
+      form {
+        margin: 20px;
+        height: 180px;
+        width: 150px;
+      }
+    }
+
+    .back {
+      bottom: 20px;
+      left: 20px;
+    }
+  }
+
+}
+
+/* TABLET */
+@media (min-width: 768px) {
+
+  header {
+    top: 30px
+  }
+
+  input[type="text"] {
+    width: 200px;
+    height: 50px;
+    font-size: x-large;
+
+  }
+
+  #inicio #code {
+    font-size: 110px;
+    color: #E24D57;
+    text-shadow: #ffffff -5px 0px 0;
+    -webkit-text-stroke: 1px #ffffff;
+  }
+
+  #inicio .delete {
+    width: 140px;
+    height: 50px;
+    font-size: 25px;
+  }
+  #inicio .input-submit{
+    height: 60px;
+    width: 60px;
+    justify-content: center;
+  }
+  #inicio .input-submit svg{
+    height: 50px;
+  }
+
+  button[type="submit"] {
+    height: 50px;
+    width: 140px;
+    font-size: 25px;
+  }
+  
+
+  .input-div {
+    width: 100px;
+    height: 100px;
+    border: 5px solid #2661AC;
+    display: flex;
+
+  }
+
+  .icon {
+
+    font-size: 2.5rem;
+
+  }
+
+  #container-form {
+    .back {
+      height: 80px;
+      width: 80px;}
+      .back svg{
+        height: 50px;
+      }
+
+    .contend {
+      display: flex;
+      flex-direction: column;
+      height: 80%;
+      width: 100%;
+      place-items: center;
+      justify-content: center;
+      margin: 0;
+
+      form {
+
+        height: 300px;
+        width: 300px;
+
+        label {
+          font-size: 45px;
+        }
+
+        span {
+          font-size: 25px;
+    color: #fff;
+        }
+      }
+
+      .input-div {
+        width: 100px;
+        height: 100px;
+      }
+    }
+
+
+  }
+
+}
+
+
+
+/* TABLET ANCHO */
+
+@media (min-width: 768px) and (orientation: landscape) {
+
+  header {
+    margin: 10px;
+  }
+
+  #container-form {
+    width: 100%;
+    background-position: top;
+
+    header {
+      margin-bottom: 0;
+    }
+
+    .contend {
+      display: flex;
+      flex-direction: row;
+      height: 80%;
+      width: 100%;
+      place-items: center;
+      gap: 2rem;
+      justify-content: center;
+
+      form {
+        margin: 20px;
+        height: 300px;
+        width: 300px;
+
+      }
+
+      .input-div {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  }
 }
